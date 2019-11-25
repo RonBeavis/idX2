@@ -37,7 +37,7 @@ bool create_results::create(map<string, string>& _p, //parameters
 		map<int64_t, int64_t>& _m) { //allowed (parent,fragment) mass pairs
 	int64_t z = 1; //serial number for PSM: used if spectrum::sc is not available
 	double pt = 1.0 / 70.0;
-	double ppm = atof(_p["parent tolerance"].c_str()) / 1.0e06; //fractional parent ion tolerance
+	double ppm = atof(_p["parent tolerance"].c_str()) / 1.0e06; //fractional parent mass tolerance
 	vector<int64_t> dvals{ -1,0,1 }; //values to compensate for integer rounding effects
 	//initialize variables for the identification process
 	int64_t d = 0;
@@ -138,13 +138,13 @@ bool create_results::create(map<string, string>& _p, //parameters
 		}
 		//check all fragment identifications and find best matches
 		int64_t isum = 0;
-		//find the sum of spectrum fragment ion intensities
+		//find the sum of spectrum fragment intensities
 		for(size_t a = 0; a < _l.spectra[s].mis.size(); a++)	{
 			isum += _l.spectra[s].mis[a].second;
 		}
 		double total = (double)isum/3; //compensate for the method used to compensate for rounding errors
 		set<int64_t> aok;
-		//test to be sure that parent masses are within the parent ion ppm tolerance
+		//test to be sure that parent masses are within the parent mass ppm tolerance
 		//mark kernel match as not ok if parent mass outside of allowed tolerance
 		for(size_t b = 0; b < ident.size(); b++)	{
 			for(size_t c = 0; c < ident[b].size(); c++)	{
