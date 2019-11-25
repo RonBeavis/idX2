@@ -14,30 +14,43 @@ as a practical method of identifying peptides from peptide MS/MS data.
 In this approach, each line of the JSON-formatted peptide sequence information was
 called a "kernel". An example of a kernel is
 
-{"lv":0,"pm":1665672,"lb":"sp|A5A3E0|","pre":"K","post":"T","beg":916,"end":928,"seq":"LCYVALDFEQEMA","ns":[35,11339,2578,0],"bs":[113084,...,1576625],"ys":[89048,...,1552588],"mods":[["C",917,119004],["M",927,15995]],"u":23973,"h":23973}
+{"lv":0,"pm":1665672,"lb":"sp|A5A3E0|","u":23973,"h":23973,
+"pre":"K","post":"T","beg":916,"end":928,"seq":"LCYVALDFEQEMA",
+"ns":[35,11339,2578,0],
+"bs":[113084,...,1576625],
+"ys":[89048,...,1552588],
+"mods":[["C",917,119004],["M",927,15995]]
+}
 
 where all of the masses are expressed in millidaltons.
 
 The name "kernel" is used both to signify that these are the basic building blocks of the
 identification process and to distinguish them from other indexing approaches that
-used different variables and file formats.
+use different variables and file formats.
 
-The arrays "bs" and "ys" correspond to
-the b-ions and y-ions of the sequence ("seq") with the modifications described in "mods" (residue, position & mass).
-The "ns" array is the number of times this sequence has been observed in GPMDB in the +1,+2,+3 and +4 charge states.
-"u" is a unique serial number for the kernel within a file and "h" is the "u" value for the first time
-a kernel is listed in the file (allows for sequence redundancy). The "lv" value "0" indicates that all of the masses
+The arrays "bs" and "ys" correspond to the b-and y-fragment neutral masses of the sequence ("seq")
+with the modifications described in "mods" (residue, position & mass).
+The "ns" array is the number of times this sequence has been observed in GPMDB 
+in the +1,+2,+3 and +4 charge states "u" is a unique serial number for the kernel 
+within a file and "h" is the "u" value for the first time a kernel is listed in the file 
+(allows for sequence redundancy). The "lv" value "0" indicates that all of the masses
 represent neutral (uncharged) molecular species.
 
-The first version indexed all values according to the parent ion neutral masses of the querying set of spectra and
-recorded the kernels associated with those masses. Those kernels where then compared with the fragment ions in each
-spectrum and an identification was generated.
+The first version indexed all values according to the parent neutral masses of the 
+querying set of spectra and recorded the kernels associated with those masses. 
+Those kernels where then compared with the fragments in each spectrum and 
+an identification was generated.
 
-The current version uses a similar approach but uses a much more aggressive indexing method. The fragment ions in the spectra
-are indexed as pairs with the parent ion mass (pm,fm1):(pm,fm2):...:(pm,fmN). Then, as the kernels are being read, each
-of their y- and b- ions are paired with the corresponding kernel "pm" and they are checked against all of the spectrum pairs.
-Only kernel pairs that match spectrum pairs are taken forward into the identification phase, significantly reducing
-the amount of memory & calculation required to generate a spectrum-to-peptide match.
+The current version uses a similar approach but uses a much more aggressive indexing method. 
+The fragment species in the spectra are indexed as pairs with the parent mass 
+
+(pm,fm1):(pm,fm2):...:(pm,fmN). 
+
+Then, as the kernels are being read, each of their y- and b- fragments are paired with 
+the corresponding kernel "pm" and they are checked against all of the spectrum pairs.
+Only kernel pairs that match spectrum pairs are taken forward into the identification 
+phase, significantly reducing the amount of memory & calculation required to generate 
+a spectrum-to-peptide match.
 */
 
 /*
@@ -47,8 +60,8 @@ The 8-byte variable types "int64_t" and "double" are used as much as possible.
 */
 
 /*
-As mentioned above, all masses used are in millidaltons, represented as "int64_t" variables. When
-floating point masses are converted to integers, the following method is used:
+As mentioned above, all masses used are in millidaltons, represented as "int64_t" 
+variables. When floating point masses are converted to integers, the following method is used:
 
 	double dm = 1234.546789; //floating point mass in daltons
 	int64_t im = (int64_t)(0.5+dm*1000.0); //integer mass in millidaltons

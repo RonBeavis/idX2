@@ -42,7 +42,7 @@ bool load_kernel::load(map<string,string>& _params,load_spectra& _l,kernels& _ke
 	const double ft = 1.0/atof(_params["fragment tolerance"].c_str()); //fragment tolerance
 	const double pt = 1.0/70.0; //maximum parent tolerance in millidaltons
 	const double ppm = 2.0E-5; //parent tolerance in ppm
-	set<int64_t> sp_set; //set of spectrum parent ion masses
+	set<int64_t> sp_set; //set of spectrum parent masses
 	phmap::parallel_flat_hash_set<sPair> spairs; //map of spectrum (parent:fragment) mass pairs
 	for(size_t a = 0; a < _l.spectra.size();a++)	{
 		sp_set.insert(_l.spectra[a].pm);
@@ -83,10 +83,10 @@ bool load_kernel::load(map<string,string>& _params,load_spectra& _l,kernels& _ke
 			hmatched++;
 			continue;
 		}
-		pm = (int64_t)js["pm"].GetInt(); //parent ion mass
-		mv = (int64_t)(0.5+(double)pm*pt); //reduced parent ion mass
-		delta = (int64_t)(0.5+(double)pm*ppm); //parent ion tolerance based on ppm
-		//check parent ion mass for ppm tolerance
+		pm = (int64_t)js["pm"].GetInt(); //parent mass
+		mv = (int64_t)(0.5+(double)pm*pt); //reduced parent mass
+		delta = (int64_t)(0.5+(double)pm*ppm); //parent mass tolerance based on ppm
+		//check parent mass for ppm tolerance
 		lower = pm-delta;
 		itppm = sp_set.lower_bound(lower);
 		skip = true;
@@ -99,15 +99,15 @@ bool load_kernel::load(map<string,string>& _params,load_spectra& _l,kernels& _ke
 		if(itppm != itsp and (*itppm-lower) <= 2*delta)	{
 			skip = false;
 		}
-		if(skip)	{ //bail out if the parent ion mass doesn't match
+		if(skip)	{ //bail out if the parent mass doesn't match
 			skipped++;
 			continue;
 		}
 		u = (int64_t)js["u"].GetInt();  //record the unique kernel id
 		_mindex[u] = pm;
-		const Value& jbs = js["bs"]; //retrieve reference to the b-ion fragments                                                           
+		const Value& jbs = js["bs"]; //retrieve reference to the b-type fragment fragments                                                           
 //		size_t vpos = 0;
-		pr.first = (int64_t)mv; //initialize the parent ion mass element of the (parent:fragment) pair
+		pr.first = (int64_t)mv; //initialize the parent mass element of the (parent:fragment) pair
 		for(SizeType a = 0; a < jbs.Size();a++)	{
 			val = (int64_t)(0.5+jbs[a].GetDouble()*ft); //reduced fragment mass
 			pr.second = val;
@@ -120,7 +120,7 @@ bool load_kernel::load(map<string,string>& _params,load_spectra& _l,kernels& _ke
 			_kernels.mvindex.insert((int64_t)mv); //add parent mass to set
 			_kernels.kindex[pr].push_back(u); //add kernel id to vector
 		}
-		const Value& jys = js["ys"]; //retrieve reference to the y-ion fragments
+		const Value& jys = js["ys"]; //retrieve reference to the y-type fragments
 		for(SizeType a = 0; a < jys.Size();a++)	{
 			val = (int64_t)(0.5+jys[a].GetDouble()*ft); //reducted fragment mass
 			pr.second = val;
