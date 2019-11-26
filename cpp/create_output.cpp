@@ -198,19 +198,19 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 	if(specs > 0)	{
 		score_min += 100.0 * log(specs)/2.3;
 	}
-	double total_prob = 0.0;
-	int64_t min_c = 8;
+	double total_prob = 0.0; //sum of all assigned probabilities
+	int64_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match
+	//updated min_c value based on instrument resolution
 	if(res == 50)	{
 		min_c = 7;
 	}
 	else if(res == 20)	{
 		min_c = 6;
 	}
-	string line;
-	using namespace rapidjson;
-	int64_t c = 0;
-	int64_t h = 0;
-	int64_t s_count = 0;
+	string line; //will contain a JSON Lines JSON object
+	using namespace rapidjson; //simplify calling rapidjson methods
+	int64_t c = 0; //lines read counter
+	int64_t h = 0; //for checking peptide homology
 	//loop through the JSON Lines entries in the kernel file to find
 	//the information about individual ids
 	while(getline(istr,line))	{
@@ -223,7 +223,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 			cout << " " << c << endl;
 			cout.flush();
 		}
-		c++;
+		c++; //increment line count
 		Document js; //rapidjson main object
    		js.Parse(line.c_str(),line.length()); //add information for a single JSON Lines object
 		if(!js.HasMember("pm"))	{ //bail out if the JSON object does not have a parent mass
@@ -236,15 +236,17 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 		if(h != (int64_t)js["u"].GetInt())	{ //keep track of the number of peptide alternate solutions
 			inferred += 1;
 		}
-		double max_prob = 0.0;
-		double prob = 0.0;
-		double delta = 0.0;
-		double pm = 0.0;
-		double ppm = 0.0;
-		double score = 0.0;
-		auto it = sdict[h].begin();
-		int64_t s = 0;
-		string seq;
+		//initialize variables
+		double max_prob = 0.0; //maximum probability for a set of spectrum-to-kernel assignments
+		double prob = 0.0; //probability of a spectrum-to-kernel assignment
+		double delta = 0.0; //parent mass difference spectrum parent - kernel parent
+		double pm = 0.0; //kernel parent mass
+		double ppm = 0.0; //delta in ppm
+		double score = 0.0; //score for a spectrum-to-kernel assignment
+		auto it = sdict[h].begin(); //iterator for sdict vectors
+		int64_t s = 0; //spectrum index
+		string seq; //kernel peptide sequence
+		//iterate through the spectra corresponding the index value h
 		while(it != sdict[h].end())	{
 			s = *it;
 			it++;
@@ -257,12 +259,15 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 			seq = js["seq"].GetString();
 			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,score,prob);
 			if(score < score_min or sv[s].ri < 0.20 or sv[s].peaks < min_c)	{
-				continue;
+				continue; //bail out if match does not pass conditions
 			}
+			//keep track of the probabilities
 			if(prob > max_prob)	{
 				max_prob = prob;
 			}
+			//initialize a string-based stream to hold one line of the output file
 			ostringstream oline;
+			//write TSV string
 			oline << sv[s].sc << "\t" << fixed << setprecision(3) << pm/1000.0 << "\t";
 			oline << delta << "\t" << setprecision(1) << ppm << setprecision(3) << "\t";
 			oline << sv[s].pz << "\t" << js["lb"].GetString() << "\t";
@@ -281,6 +286,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 			else	{
 				oline << sv[s].ri << "\t" << setprecision(1) << "-" << "\t" << -0.01*score << "\t";
 			}
+			//deal with modifications
 			if(js.HasMember("mods"))	{
 				const Value& jmods = js["mods"];
 				vector<mod> mods;
@@ -302,6 +308,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 					}
 				}
 			}
+			//add output file line to mapped vector for spectrum index s
 			if(odict.find(s) != odict.end())	{
 				odict[s].push_back(oline.str());			
 			}
@@ -309,17 +316,19 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 				odict.insert(pair<int64_t,vector<string> >(s,vector<string>()));
 				odict[s].push_back(oline.str());
 			}
+			//add ppm value to ppms histogram
 			ppms[s] = (int64_t)(0.5+ppm);
 		}
 		total_prob += max_prob;
-		s_count++;
 	}
+	//open a file stream to output information in odict
 	ofstream ofs;
 	ofs.open(_params["output file"]); //open output stream
 	//define headers for the output TSV file
 	string header = "Id\tSub\tScan\tPeptide mass\tDelta\tppm\tz\tProtein acc\t";
 	header += "Start\tEnd\tPre\tSequence\tPost\tIC\tRI\tlog(f)\tlog(p)\tModifications";
 	ofs << header << endl;
+	//determine parent mass delta ppm acceptance window
 	find_window();
 	int64_t err = 0;
 	int64_t sub = 0;
