@@ -11,7 +11,7 @@ CXX = g++
 #uncomment this line if you are using gcc 4.x
 #CXXFLAGS = -O3 -fopenmp -D_GLIBCXX_PARALLEL -march=native
 #CXXFLAGS = -fprofile-generate
-CXXFLAGS = -O2 -I$(INC_PATH) -Wall
+CXXFLAGS = -O2 -I$(INC_PATH)
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
