@@ -1,0 +1,47 @@
+#makefile for c++ programs
+#change the name of the executable to use for "any" project
+
+EXECUTABLE = bin/idx
+LINKCC = $(CXX)
+INC_PATH=.
+#CXXFLAGS denotes flags for the C++ compiler
+
+CXX = g++
+
+#uncomment this line if you are using gcc 4.x
+#CXXFLAGS = -O3 -fopenmp -D_GLIBCXX_PARALLEL -march=native
+#CXXFLAGS = -fprofile-generate
+CXXFLAGS = -O2 -I$(INC_PATH) -Wall
+
+SRCS := $(wildcard *.cpp)
+OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
+DEPS := $(patsubst %.o,%.d,$(OBJS))
+
+all: $(EXECUTABLE)
+
+#define the components of the program, and how to link them
+#these components are defined as dependencies; that is they must be up-to-date before the code is linked
+
+$(EXECUTABLE): $(DEPS) $(OBJS)
+	$(LINKCC) $(CXXFLAGS) -o $(EXECUTABLE) $(OBJS) $(LDFLAGS)
+
+#specify the dep files depend on the cpp files
+
+%.d: %.cpp
+	$(CXX) -M $(CXXFLAGS) $< > $@
+	$(CXX) -M $(CXXFLAGS) $< | sed s/\\.o/.d/ > $@
+
+clean:
+	-rm $(OBJS) $(EXECUTABLE) $(DEPS)
+
+explain:
+	@echo "The following info represents the program:"
+	@echo "Final exec name: $(EXECUTABLE)"
+	@echo "Source files:       $(SRCS)"
+	@echo "Object files:       $(OBJS)"
+	@echo "Dep files:          $(DEPS)"
+
+depend: $(DEPS)
+	@echo "Deps are now up-to-date."
+ 	
+-include $(DEPS)
