@@ -134,14 +134,14 @@ int main(int argc, char* argv[])	{
 	string spectrum_file = argv[1]; //file containing spectra in MGF format
     	if(!exists(spectrum_file))	{
 		cout << "Error (idx:0001): spectrum file \"" << spectrum_file << "\" does not exist" << endl;
-		return 0;
+		return 2;
 	}
 	params["spectrum file"] = spectrum_file;
 
 	string kernel_file = argv[2]; //file containing kernels in JSON Lines format
     	if(!exists(kernel_file))	{
 		cout << "Error (idx:0002): kernel file \"" << kernel_file << "\" does not exist" << endl;
-		return 0;
+		return 2;
 	}
 	params["kernel file"] = kernel_file;
 
@@ -193,7 +193,7 @@ int main(int argc, char* argv[])	{
 	try	{
 		if(!ls.load(params))	{ // load spectra into the ls object
 			cout << "Error (idx:0003): failed to load spectrum file \"" << spectrum_file << "\"" << endl;
-			return 0;
+			return 1;
 		}
 		if(maximum_spectra != -1)	{ // use the maximum_spectra value, if specified
 			ls.set_max(maximum_spectra);
@@ -219,7 +219,7 @@ int main(int argc, char* argv[])	{
 	try	{
 		if(!lk.load(params,ls,kindex,mindex))	{ //load kernel information 
 			cout << "Error (idx:0005): failed to load kernel file \"" << kernel_file << "\"" << endl;
-			return 0;
+			return 1;
 		}
 	}
 	catch (...)	{
@@ -236,7 +236,7 @@ int main(int argc, char* argv[])	{
 	try	{
 		if(!cr.create(params,ls,kindex,mindex))	{ //create peptide-to-spectrum matches
 			cout << "Error (idx:0006): failed to create results " << "\n";
-			return 0;
+			return 1;
 		}
 	}
 	catch (...)	{
@@ -253,7 +253,7 @@ int main(int argc, char* argv[])	{
 		create_output co;
 		if(!co.create(params,cr))	{ //create output file, based on the matches in the cr object
 			cout << "Error (idx:0007): failed to create output " << endl;
-			return 0;
+			return 1;
 		}
 	}
 	catch (...)	{
