@@ -60,11 +60,11 @@ bool create_results::create(map<string, string>& _p, //parameters
 	//loop through spectra
 	for (size_t s = 0; s < _l.spectra.size(); s++) {
 		//output keep-alive text for logging
-		if (s != 0 and s % 500 == 0) {
+		if (s != 0 and s % 100 == 0) {
 			cout << '.';
 			cout.flush();
 		}
-		if (s != 0 and s % 10000 == 0) {
+		if (s != 0 and s % 1000 == 0) {
 			cout << " " << s << endl;
 			cout.flush();
 		}

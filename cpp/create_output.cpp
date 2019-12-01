@@ -128,15 +128,15 @@ bool create_output::load_mods(void)	{
 bool create_output::find_window(void)	{
 	map<int64_t,int64_t> vs;
 	int64_t i = 0;
-	for(i = -20; i < 21; i++)	{
+	for(i = -21; i < 22; i++)	{
 		vs[i] = 0;
 	}
 	auto it = ppms.begin();
-	int64_t max = -21;
+	int64_t max = -22;
 	int64_t center = -1;
 	while(it != ppms.end())	{
-		i = (int64_t)(0.5 + it->second);
-		if(i >= -20 and i <= 20)	{
+		i = (int64_t)(0.5 + *it);
+		if(i >= -21 and i <= 21)	{
 			vs[i] += 1;
 		}
 		if(vs[i] > max)	{
@@ -145,6 +145,10 @@ bool create_output::find_window(void)	{
 		}
 		it++;
 	}
+//	cout << endl << max << endl;
+//	for(int64_t j = -20; j <= 20; j++)	{
+//		cout << j << "\t" << vs[j] << endl;
+//	}
 	double ic = (double)max;
 	if(ic < 100.0)	{
 		low = -20.0;
@@ -152,15 +156,15 @@ bool create_output::find_window(void)	{
 		return true;
 	}
 	int64_t l = -20;
-	for(i = -20;i < center; i++)	{
-		if(vs[i]/ic >= 0.01)	{
+	for(i = center;i >= -20 ; i--)	{
+		if(vs[i]/ic < 0.01 and vs[i-1]/ic < 0.01)	{
 			l = i;
 			break;
 		}
 	}
 	int64_t h = 20;
-	for(i = 20; i > center; i--)	{
-		if(vs[i]/ic >= 0.01)	{
+	for(i = center; i <= 20 ; i++)	{
+		if(vs[i]/ic < 0.01 and vs[i+1]/ic < 0.01)	{
 			h = i;
 			break;
 		}
@@ -214,19 +218,12 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	double total_prob = 0.0; //sum of all assigned probabilities
 	int64_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match
 	//updated min_c value based on instrument resolution
-	fragmentation = _params["fragmentation"];
 	if(res == 50)	{
 		min_c = 7;
 	}
 	else if(res == 20)	{
 		min_c = 6;
 	}
-	if(fragmentation == "hcd")	{
-		min_c = 6;
-	}		
-	else if(fragmentation == "cid")	{
-		min_c = 8;
-	}		
 	string line; //will contain a JSON Lines JSON object
 	using namespace rapidjson; //simplify calling rapidjson methods
 	int64_t c = 0; //lines read counter
@@ -266,7 +263,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 		double prob = 0.0; //probability of a spectrum-to-kernel assignment
 		double delta = 0.0; //parent mass difference spectrum parent - kernel parent
 		double pm = 0.0; //kernel parent mass
-		double ppm = 0.0; //delta in ppm
+		double ppm = -10000000.0; //delta in ppm
 		double score = 0.0; //score for a spectrum-to-kernel assignment
 		auto it = sdict[h].begin(); //iterator for sdict vectors
 		int64_t s = 0; //spectrum index
@@ -353,8 +350,8 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 				odict[s].push_back(oline.str());
 			}
 			//add ppm value to ppms histogram
+			ppms.push_back((int64_t)(0.5+ppm));
 		}
-		ppms[s] = (int64_t)(0.5+ppm);
 		total_prob += max_prob;
 	}
 	::fclose(pFile);
@@ -373,12 +370,15 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	int64_t tot = 0;
 	string t;
 	//loop through result lines and record the information
+	int64_t low_t = (int64_t)(0.5 + low);
+	int64_t high_t = (int64_t)(0.5 + high);
+	int64_t ps_t = 0;
 	for(int64_t a = 0; a < (int64_t)odict.size(); a++)	{
 		sub = 1;
 		for(size_t b = 0; b < odict[a].size(); b++)	{
 			t = odict[a][b];
-			double ps = get_ppm(t);
-			if(ps <= high and ps >= low)	{
+			ps_t = (int64_t)(0.5+get_ppm(t));
+			if(ps_t <= high_t and ps_t >= low_t)	{
 				ofs << a << "\t" << sub << "\t" << t << endl;
 				sub++;
 				tot++;
@@ -393,9 +393,12 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	if(total_prob > 0)	{
 		cout << "     fpr = " << scientific << setprecision(1) << total_prob << endl;
 	}
-	if(low != -20 and high != 20)	{
-		double ble = 100.0*((high-low)/41.0)*(double)err/(double)tot;
-		cout << "     baseline error = " << fixed << setprecision(1) << ble << "%" << endl;
+	if(low != -20.0 and high != 20.0)	{
+//		double ble = 100.0*((high-low)/41.0)*(double)err/(double)(tot+err);
+		double ble = (20.0 - high) + (low + 20.0);
+		ble = err/ble;
+		ble = 100.0*(ble*(high-low + 1)/tot);
+		cout << "     baseline error = " << fixed << setprecision(1) << ble << "% (" << err << ")" << endl;
 	}
 	else	{
 		cout << "     baseline error = n/a" << endl;

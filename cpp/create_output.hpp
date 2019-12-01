@@ -82,13 +82,14 @@ private:
 	map<int64_t,set<int64_t> > sdict;
 	map<int64_t,string> mt;
 	map<int64_t,vector<string> > odict;
-	map<int64_t,int64_t> ppms;
+	vector<int64_t> ppms;
 	string fragmentation;
 	const int64_t c13 = 1003; //mass difference between the A1 and A0 peaks
 	map<int64_t,vector<double> > distribution;
 	//retrieves the ppm column from a formatted output string
 	double get_ppm(string& t)	{
 		size_t s = t.find("\t");
+		s = t.find("\t",s+1);
 		s = t.find("\t",s+1);
 		s = t.find("\t",s+1);
 		return atof((t.substr(s+1,t.size()-1)).c_str());
