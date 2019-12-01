@@ -20,16 +20,17 @@ typedef std::pair <int64_t,int64_t> sPair; //type used to record (parent,fragmen
 class spectrum
 {
 public:
-	spectrum(void)	{pm = 0;pi=0;pz=0;sc=0;pt=0.0;}
+	spectrum(void)	{pm = 0;pi=0;pz=0;sc=0;pt=0.0;rt=0.0;}
 	virtual ~spectrum(void)	{ clear(); }
 	int64_t pm; //parent mass
 	int64_t pi; //parent intensity
 	int64_t pz; //parent charge
 	int64_t sc; //scan number
+	double rt; //run time
 	int64_t isum; //sum of fragment intensities
 	double pt; //parent mass tolerance
 	vector<pair<int64_t,int64_t>> mis; //fragment mass/intensity pairs
-	phmap::parallel_flat_hash_set<sPair> spairs; //index of (parent,fragment) masses
+	phmap::flat_hash_set<sPair> spairs; //index of (parent,fragment) masses 
 	string desc;//description of spectrum
 	bool clear()	{sc = 0;pm = 0; pi = 0; pz = 0; sc=0; desc = ""; mis.clear();spairs.clear();return true;}
 	spectrum& operator=(const spectrum &rhs)	{ //copy operator
@@ -38,6 +39,7 @@ public:
 		pi = rhs.pi;
 		pz = rhs.pz;
 		pt = rhs.pt;
+		rt = rhs.rt;
 		desc = rhs.desc;
 		sc = rhs.sc;
 		pair<int64_t,int64_t> p;

@@ -22,32 +22,29 @@ using namespace std;
 #include "load_spectra.hpp"
 #include "load_kernel.hpp"
 
-load_kernel::load_kernel(void)	{
+load_kernel::load_kernel()	{
+	kfile = "";
+	fragment_tolerance = 0;
+	thread = 0;
+	threads = 1;
 }
 
 load_kernel::~load_kernel(void)	{
 }
 //
 // Loads information from a kernel file specified in _params based on the spectra in the _load_spectra object.
-// The information is returned in the _kernesl object and _mindex map
+// The information is returned in the kerns and pmindex member objects
 //
-bool load_kernel::load(map<string,string>& _params,load_spectra& _l,kernels& _kernels,map<int64_t,int64_t>& _mindex)	{
-	ifstream istr;
-	istr.open(_params["kernel file"]); //open kernel file stream
-	if(istr.fail())	{
+bool load_kernel::load(void)	{
+	FILE *pFile = ::fopen(kfile.c_str(),"r");
+	if(pFile == NULL)	{
 		return false;
 	}
 	string line;
 	using namespace rapidjson; //namespace for the rapidjson methods
-	const double ft = 1.0/atof(_params["fragment tolerance"].c_str()); //fragment tolerance
+	const double ft = 1.0/fragment_tolerance; //fragment tolerance
 	const double pt = 1.0/70.0; //maximum parent tolerance in millidaltons
 	const double ppm = 2.0E-5; //parent tolerance in ppm
-	set<int64_t> sp_set; //set of spectrum parent masses
-	phmap::parallel_flat_hash_set<sPair> spairs; //map of spectrum (parent:fragment) mass pairs
-	for(size_t a = 0; a < _l.spectra.size();a++)	{
-		sp_set.insert(_l.spectra[a].pm);
-		spairs.insert(_l.spectra[a].spairs.begin(),_l.spectra[a].spairs.end());
-	}
 	auto itsp = sp_set.end();
 	auto itppm = sp_set.end();
 	int64_t skipped = 0;
@@ -62,23 +59,30 @@ bool load_kernel::load(map<string,string>& _params,load_spectra& _l,kernels& _ke
 	int64_t lower = 0;
 	int64_t delta = 0;
 	kPair pr;
+	const int max_buffer = 1024*16-1;
+	char *buffer = new char[max_buffer+1];
 	//loop through kernel lines
-	while(getline(istr,line))	{
+	while(::fgets(buffer,max_buffer,pFile) != NULL)	{
 		//print keep-alive text for logging
-		if(lines != 0 and lines % 10000 == 0)	{
+		if(thread == 0 and lines != 0 and lines % 10000 == 0)	{
 			cout << '.';
 			cout.flush();
 		}
-		if(lines != 0 and lines % 200000 == 0)	{
+		if(thread == 0 and lines != 0 and lines % 200000 == 0)	{
 			cout << " " << lines << endl;
 			cout.flush();
 		}
+		if(lines % threads != thread)	{
+			lines++;
+			continue;
+		}
 		lines++;
 		Document js; //rapidjson main object
-   		js.Parse(line.c_str(),line.length()); //add information for a single JSON Lines object
+		js.ParseInsitu(buffer);
 		if(!js.HasMember("pm"))	{ //bail out if the JSON object does not have a parent mass
 			continue;
 		}
+		add_hu(js["h"].GetInt(),js["u"].GetInt());
 		if(js["u"].GetInt() != js["h"].GetInt())	{ //bail out if the JSON object is not the first instance of the peptide & modifications
 			hmatched++;
 			continue;
@@ -104,7 +108,7 @@ bool load_kernel::load(map<string,string>& _params,load_spectra& _l,kernels& _ke
 			continue;
 		}
 		u = (int64_t)js["u"].GetInt();  //record the unique kernel id
-		_mindex[u] = pm;
+		pmindex[u] = pm;
 		const Value& jbs = js["bs"]; //retrieve reference to the b-type fragment fragments                                                           
 //		size_t vpos = 0;
 		pr.first = (int64_t)mv; //initialize the parent mass element of the (parent:fragment) pair
@@ -114,11 +118,11 @@ bool load_kernel::load(map<string,string>& _params,load_spectra& _l,kernels& _ke
 			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
 				continue;
 			}
-			if(_kernels.kindex.find(pr) == _kernels.kindex.end())	{ 
-				_kernels.add_pair(pr); //create a new vector for the object
+			if(kerns.kindex.find(pr) == kerns.kindex.end())	{ 
+				kerns.add_pair(pr); //create a new vector for the object
 			}
-			_kernels.mvindex.insert((int64_t)mv); //add parent mass to set
-			_kernels.kindex[pr].push_back(u); //add kernel id to vector
+			kerns.mvindex.insert((int64_t)mv); //add parent mass to set
+			kerns.kindex[pr].push_back(u); //add kernel id to vector
 		}
 		const Value& jys = js["ys"]; //retrieve reference to the y-type fragments
 		for(SizeType a = 0; a < jys.Size();a++)	{
@@ -127,16 +131,19 @@ bool load_kernel::load(map<string,string>& _params,load_spectra& _l,kernels& _ke
 			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
 				continue;
 			}
-			if(_kernels.kindex.find(pr) == _kernels.kindex.end())	{
-				_kernels.add_pair(pr); //create a new vector for the object
+			if(kerns.kindex.find(pr) == kerns.kindex.end())	{
+				kerns.add_pair(pr); //create a new vector for the object
 			}
-			_kernels.mvindex.insert((int64_t)mv); //add parent mass to set
-			_kernels.kindex[pr].push_back(u);//add kernel id to vector
+			kerns.mvindex.insert((int64_t)mv); //add parent mass to set
+			kerns.kindex[pr].push_back(u);//add kernel id to vector
 		}
 	}
-	cout << "\n";
-	cout.flush();
-	istr.close();
+	if(thread == 0)	{
+		cout << "\n";
+		cout.flush();
+	}
+	::fclose(pFile);
+	delete buffer;
 	return true;
 }
 

@@ -86,6 +86,12 @@ using namespace std::chrono; //namespace only used in this file
 #include "load_kernel.hpp" //defines the load_kernels object
 #include "create_results.hpp" //defines the create_results object
 #include "create_output.hpp" //defines the create_output object
+#ifdef MSVC
+	#define _TIMESPEC_DEFINED
+#endif
+#include <pthread.h>
+
+void* KernelThread(void *pParam);
 
 //
 //	Simple method to serve as a cross-platform check for the existence of a file
@@ -96,7 +102,7 @@ inline bool exists (const std::string& name) {
 }
 
 int load_params(map<string,string>& params,int argc,char* argv[])	{
-	params["version"] = "idX, 2020.1";
+	params["version"] = "idX, 2020.1 (mt)";
 	params["fragmentation"] = "";
 	int64_t fragment_tolerance = 400; // default fragment mass tolerance
 	try	{
@@ -111,7 +117,7 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 		cout << "Error (idx:0020): exception thrown trying to assign fragment tolerance" << endl;
 		return 1;
 	}
-	ostringstream strStream;
+	ostringstream strStream; //using ostringstream to avoid potentially unsafe sprintf
 	try	{
 		strStream.clear();
 		strStream.str("");
@@ -214,8 +220,10 @@ int main(int argc, char* argv[])	{
 	}
 	high_resolution_clock::time_point t2 = high_resolution_clock::now(); //end timing spectrum loading and report
 	cout << "	   spectra = " << ls.spectra.size() << "\n";
-	cout << "	spectra &Delta;T = " << duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << endl;
-	ostringstream strStream;
+	cout << "	spectra &Delta;T = " 
+				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
+				<< " s" << endl;
+	ostringstream strStream; //using ostringstream to avoid potentially unsafe sprintf
 	strStream.str("");
 	strStream.clear();
 	strStream << (long)ls.spectra.size();
@@ -223,28 +231,56 @@ int main(int argc, char* argv[])	{
 	t1 = high_resolution_clock::now(); //begin timing kernel loading
 	cout << "load & index kernel"  << "\n";
 	cout.flush();
-	kernels kindex; //object that will contain kernel information
-	map<int64_t,int64_t> mindex; //object that will contain (pm,fmN) index
-	load_kernel lk; //object that will load kernel information from the specified file
-	try	{
-		if(!lk.load(params,ls,kindex,mindex))	{ //load kernel information 
-			cout << "Error (idx:0005): failed to load kernel file \"" << params["kernel file"] << "\"" << endl;
-			return 1;
+
+	long max_threads = 2;
+	load_kernel **pKernels = new load_kernel*[max_threads];
+	int *pId = new int[max_threads];
+	int *pHandle = new int[max_threads];
+	pthread_t *pThreads = new pthread_t[max_threads];
+	for(int a = 0; a < max_threads; a++)	{
+		pKernels[a] = (load_kernel *)NULL;
+		pHandle[a] = 0;
+		pId[a] = 0;
+	}
+	for(int a = 0; a < max_threads; a++)	{
+		pKernels[a] = new load_kernel();
+		pKernels[a]->kfile = params["kernel file"]; //initialize lk variable
+		pKernels[a]->fragment_tolerance = (double)atof(params["fragment tolerance"].c_str()); //initialize lk variable
+		pKernels[a]->thread = a;
+		pKernels[a]->threads = max_threads;
+		pKernels[a]->spectrum_pairs(ls);
+		pthread_create(&pThreads[a],NULL,KernelThread,(void*)pKernels[a]);
+	}
+
+	void *vp = (void *)NULL;
+	int wait = 0;
+	for(int a = 0;a < max_threads; a++){
+		wait = pthread_join(pThreads[a],&vp);
+		if(wait != 0)	{
+			cout << "Error (idx:1000): thread #" << a 
+					<< " returned with an error" << endl;
 		}
 	}
-	catch (...)	{
-		cout << "Error (idx:0025): failed to load kernel file \"" << params["kernel file"] << "\"\n";
-		return 1;
+	load_kernel lk_main;
+	for(int a = 0;a < max_threads; a++){
+		lk_main += *(pKernels[a]);
+		delete pKernels[a];
 	}
+	delete pKernels;
+	delete pId;
+	delete pThreads;
+	delete pHandle;
 	t2 = high_resolution_clock::now(); //end timing kernel loading and report
-	cout << "	   kernels = " << kindex.size() << "\n";
-	cout << "	kernels &Delta;T = " << duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << endl;
+	cout << "	   kernels = " << lk_main.kerns.size() << "\n";
+	cout << "	kernels &Delta;T = " 
+				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
+				<< " s" << endl;
 	t1 = high_resolution_clock::now(); //begin timing peptide-to-spectrum matching
 	cout << "perform ids"  << "\n";
 	cout.flush();
 	create_results cr; //object that will contain match information
 	try	{
-		if(!cr.create(params,ls,kindex,mindex))	{ //create peptide-to-spectrum matches
+		if(!cr.create(params,ls,lk_main))	{ //create peptide-to-spectrum matches
 			cout << "Error (idx:0006): failed to create results " << "\n";
 			return 1;
 		}
@@ -255,13 +291,15 @@ int main(int argc, char* argv[])	{
 	}
 	t2 = high_resolution_clock::now(); //end timing peptide-to-spectrum matching and report
 	cout << "	   results = " << cr.size() << "\n";
-	cout << "	results &Delta;T = " << duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << endl;
+	cout << "	results &Delta;T = " 
+				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
+				<< " s" << endl;
 	cout << "create report"  << "\n";
 	cout.flush();
 	t1 = high_resolution_clock::now(); //begin timing output file creation
 	try	{
 		create_output co;
-		if(!co.create(params,cr))	{ //create output file, based on the matches in the cr object
+		if(!co.create(params,cr,lk_main.hu_set))	{ //create output file, based on the matches in the cr object
 			cout << "Error (idx:0007): failed to create output " << endl;
 			return 1;
 		}
@@ -273,5 +311,10 @@ int main(int argc, char* argv[])	{
 	t2 = high_resolution_clock::now(); //end timing output file creation
 	cout << "... done\n";
 	return 0;
+}
+
+void* KernelThread(void *_p){
+	((load_kernel *)_p)->load();
+ 	return (void*)0;
 }
 

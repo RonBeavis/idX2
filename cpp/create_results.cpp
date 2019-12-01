@@ -33,8 +33,7 @@ create_results::~create_results(void) {
 //
 bool create_results::create(map<string, string>& _p, //parameters
 		load_spectra& _l, //spectrum informaiton
-		kernels& _k, //kernel information
-		map<int64_t, int64_t>& _m) { //allowed (parent,fragment) mass pairs
+		load_kernel& _k) { //kernel information
 	int64_t z = 1; //serial number for PSM: used if spectrum::sc is not available
 	double pt = 1.0 / 70.0;
 	double ppm = atof(_p["parent tolerance"].c_str()) / 1.0e06; //fractional parent mass tolerance
@@ -54,7 +53,7 @@ bool create_results::create(map<string, string>& _p, //parameters
 	vector<int64_t> ims;
 	bool use2 = false; //use z=2 fragments if fragment mass large enough
 	bool use3 = false; //use z=2 fragments if parent z=3
-	auto itk = _k.kindex.end(); //store value for subsequent map finds
+	auto itk = _k.kerns.kindex.end(); //store value for subsequent map finds
 	kPair pv; //a kernel (parent,fragment) pair
 	vector<double> mvs;
 	vector<double> ms;
@@ -92,7 +91,7 @@ bool create_results::create(map<string, string>& _p, //parameters
 			for (size_t n = 0; n < dvals.size(); n++) {
 				d = dvals[n];
 				pv.first = (int64_t)(cpm + d); //initialize (parent,fragment) pair
-				if(_k.mvindex.find(pv.first) == _k.mvindex.end())	{ //bail if parent had no fragments in any kernel
+				if(_k.kerns.mvindex.find(pv.first) == _k.kerns.mvindex.end())	{ //bail if parent had no fragments in any kernel
 					continue;
 				}
 				//loop through spectrum fragment (mass,intensity) pairs
@@ -100,26 +99,26 @@ bool create_results::create(map<string, string>& _p, //parameters
 					m = _l.spectra[s].mis[b].first; //fragment mass
 					m2 = m * 2; //fragment mass if fragment charge was 2
 					pv.second = m; //set fragment mass in (mass,intensity) pair
-					itk = _k.kindex.find(pv); //
+					itk = _k.kerns.kindex.find(pv); //
 					idx.clear();
 					//check if pair was in kernels and record result
-					if(itk !=  _k.kindex.end())	{ 
-						idx.insert(idx.end(),_k.kindex[pv].begin(),_k.kindex[pv].end());
+					if(itk !=  _k.kerns.kindex.end())	{ 
+						idx.insert(idx.end(),_k.kerns.kindex[pv].begin(),_k.kerns.kindex[pv].end());
 						idi = _l.spectra[s].mis[b].second;
 					}
 					else if(use2 and m2 > 100000)	{
 						pv.second = m2;
-						itk = _k.kindex.find(pv);
-						if(itk !=  _k.kindex.end())	{
-							idx.insert(idx.end(),_k.kindex[pv].begin(),_k.kindex[pv].end());
+						itk = _k.kerns.kindex.find(pv);
+						if(itk !=  _k.kerns.kindex.end())	{
+							idx.insert(idx.end(),_k.kerns.kindex[pv].begin(),_k.kerns.kindex[pv].end());
 							idi = _l.spectra[s].mis[b].second;
 						}
 					}
 					else if(use3)	{
 						pv.second = m2;
-						itk = _k.kindex.find(pv);
-						if(itk !=  _k.kindex.end())	{
-							idx.insert(idx.end(),_k.kindex[pv].begin(),_k.kindex[pv].end());
+						itk = _k.kerns.kindex.find(pv);
+						if(itk !=  _k.kerns.kindex.end())	{
+							idx.insert(idx.end(),_k.kerns.kindex[pv].begin(),_k.kerns.kindex[pv].end());
 							idi = _l.spectra[s].mis[b].second;
 						}
 					}
@@ -149,7 +148,7 @@ bool create_results::create(map<string, string>& _p, //parameters
 		for(size_t b = 0; b < ident.size(); b++)	{
 			for(size_t c = 0; c < ident[b].size(); c++)	{
 				int64_t a = ident[b][c];
-				if(fabs(ms[b]-_m[a]) < ppm*ms[b])	{
+				if(fabs(ms[b]-_k.pmindex[a]) < ppm*ms[b])	{
 					aok.insert(a);
 				}
 			}
@@ -212,6 +211,7 @@ bool create_results::create(map<string, string>& _p, //parameters
 			r.pm = _l.spectra[s].pm;
 			r.pz = _l.spectra[s].pz;
 			r.sc = _l.spectra[s].sc;
+			r.rt = _l.spectra[s].rt;
 			r.ions = (int64_t)_l.spectra[s].mis.size()/3;
 			ids.push_back(r);
 		}

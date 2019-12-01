@@ -52,6 +52,7 @@ bool load_spectra::load(map<string,string>& _params)	{
 	const double proton = 1.007276; //constant used to recalculate neutral masses
 	int64_t scan = 0; //scan number of the spectrum
 	int64_t s = 1;
+	double rt = 0.0;
 	// process the file, one line at a time
 	while(istr.good() && !istr.eof())	{
 		istr.getline(line,len-1,'\n');
@@ -78,6 +79,7 @@ bool load_spectra::load(map<string,string>& _params)	{
 			desc += "RTINSECONDS=";
 			desc += run_time;
 			desc += " ";
+			rt = (double)atof(run_time.c_str());
 		}
 		else if(temp.find("CHARGE=") != temp.npos)	{ //tag for parent ion charge
 			temp = temp.substr(equals+1,size-equals+1);
@@ -107,6 +109,7 @@ bool load_spectra::load(map<string,string>& _params)	{
 				sp.pi = 100;
 				sp.pt = pt;
 				sp.desc = desc;
+				sp.rt = rt;
 				//substitute ordinal value for scan number, if no scan available
 				if(scan == 0)	{
 					sp.sc = s;

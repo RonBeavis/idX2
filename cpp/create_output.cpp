@@ -172,10 +172,9 @@ bool create_output::find_window(void)	{
 //
 //create coordinates the creation of an output file, as specified in _params
 //
-bool create_output::create(map<string,string>& _params,create_results& _cr)	{
-	ifstream istr;
-	istr.open(_params["kernel file"]); //opens a stream associated with the kernel file
-	if(istr.fail())	{
+bool create_output::create(map<string,string>& _params,create_results& _cr, map<int64_t, set<int64_t> >& _hu)	{
+	FILE *pFile = ::fopen(_params["kernel file"].c_str(),"r");
+	if(pFile == NULL)	{
 		return false;
 	}
 	if(!load_mods())	{ //warns if "reports_mods.txt" is not present
@@ -195,6 +194,14 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 				sdict[k].insert(_cr.ids[j].sn);
 			}
 		}
+	}
+	auto itsd = sdict.begin();
+	set<int64_t> hu_set;
+	while(itsd != sdict.end())	{
+		if(_hu.find(itsd->first) != _hu.end())	{
+			hu_set.insert(_hu[itsd->first].begin(),_hu[itsd->first].end());
+		}
+		itsd++;
 	}
 	//initialize variables
 	int64_t res = atoi(_params["fragment tolerance"].c_str());
@@ -226,7 +233,9 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 	int64_t h = 0; //for checking peptide homology
 	//loop through the JSON Lines entries in the kernel file to find
 	//the information about individual ids
-	while(getline(istr,line))	{
+	const int max_buffer = 1024*16-1;
+	char *buffer = new char[max_buffer+1];
+	while(::fgets(buffer,max_buffer,pFile) != NULL)	{
 		//output keep-alive text for logging
 		if(c != 0 and c % 10000 == 0)	{
 			cout << '.';
@@ -237,8 +246,11 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 			cout.flush();
 		}
 		c++; //increment line count
+		if(hu_set.find(c-1) == hu_set.end())	{
+			continue;
+		}
 		Document js; //rapidjson main object
-   		js.Parse(line.c_str(),line.length()); //add information for a single JSON Lines object
+   		js.ParseInsitu(buffer); //add information for a single JSON Lines object
 		if(!js.HasMember("pm"))	{ //bail out if the JSON object does not have a parent mass
 			continue;
 		}
@@ -246,7 +258,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 		if(sdict.find(h) == sdict.end())	{ //bail out if the kernel was not identified
 			continue;
 		}
-		if(h != (int64_t)js["u"].GetInt())	{ //keep track of the number of peptide alternate solutions
+		if(h != (int64_t)js["u"].GetInt())	{ //track # of peptide alternate solutions
 			inferred += 1;
 		}
 		//initialize variables
@@ -280,8 +292,15 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 			}
 			//initialize a string-based stream to hold one line of the output file
 			ostringstream oline;
+			oline << sv[s].sc << "\t";
 			//write TSV string
-			oline << sv[s].sc << "\t" << fixed << setprecision(3) << pm/1000.0 << "\t";
+			if(sv[s].rt != 0)	{
+				oline << fixed << setprecision(3)  << sv[s].rt << "\t";
+			}
+			else	{
+				oline << "\t";
+			}
+			oline << fixed << setprecision(3) << pm/1000.0 << "\t";
 			oline << delta << "\t" << setprecision(1) << ppm << setprecision(3) << "\t";
 			oline << sv[s].pz << "\t" << js["lb"].GetString() << "\t";
 			oline << js["beg"].GetInt() << "\t" << js["end"].GetInt() << "\t";
@@ -294,10 +313,12 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 			}
 			oline << fixed << setprecision(2);
 			if(lns > 0)	{
-				oline << sv[s].ri << "\t" << setprecision(1) << log(lns)/2.3 << "\t" << -0.01*score << "\t";
+				oline << sv[s].ri << "\t" << setprecision(1) 
+						  << log(lns)/2.3 << "\t" << -0.01*score << "\t";
 			}
 			else	{
-				oline << sv[s].ri << "\t" << setprecision(1) << "-" << "\t" << -0.01*score << "\t";
+				oline << sv[s].ri << "\t" << setprecision(1) 
+						  << "-" << "\t" << -0.01*score << "\t";
 			}
 			//deal with modifications
 			if(js.HasMember("mods"))	{
@@ -314,10 +335,12 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 				sort(mods.begin(),mods.end());
 				for(size_t a = 0; a < mods.size(); a++)	{
 					if(mt.find(mods[a].mass) != mt.end())	{
-						oline << mods[a].res << mods[a].pos << "~" << mt.find(mods[a].mass)->second << ";";
+						oline << mods[a].res << mods[a].pos << "~" 
+							<< mt.find(mods[a].mass)->second << ";";
 					}
 					else	{
-						oline << mods[a].res << mods[a].pos << "#" << mods[a].mass/1000.0 << ";";
+						oline << mods[a].res << mods[a].pos << "#" 
+							<< mods[a].mass/1000.0 << ";";
 					}
 				}
 			}
@@ -330,15 +353,17 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 				odict[s].push_back(oline.str());
 			}
 			//add ppm value to ppms histogram
-			ppms[s] = (int64_t)(0.5+ppm);
 		}
+		ppms[s] = (int64_t)(0.5+ppm);
 		total_prob += max_prob;
 	}
+	::fclose(pFile);
+	delete buffer;
 	//open a file stream to output information in odict
 	ofstream ofs;
 	ofs.open(_params["output file"]); //open output stream
 	//define headers for the output TSV file
-	string header = "Id\tSub\tScan\tPeptide mass\tDelta\tppm\tz\tProtein acc\t";
+	string header = "Id\tSub\tScan\tRT(s)\tPeptide mass\tDelta\tppm\tz\tProtein acc\t";
 	header += "Start\tEnd\tPre\tSequence\tPost\tIC\tRI\tlog(f)\tlog(p)\tModifications";
 	ofs << header << endl;
 	//determine parent mass delta ppm acceptance window
@@ -381,7 +406,6 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 	ofs.close();
 	cout << endl;
 	cout.flush();
-	istr.close();
 	return true;
 }
 

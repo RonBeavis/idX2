@@ -12,12 +12,22 @@ to generate the output for that match
 class id
 {
 public:
-	id(void)	{}
+	id(void)	{
+		sn = 0; //scan number
+		peaks = 0; //number of fragment ions identified
+		ri = 0.0; //fraction of ion intensity identified
+		pm = 0; //parent ion mass
+		pz = 0; //parent ion charge
+		sc = 0; //scan number
+		ions = 0; //number of fragment ions in the spectrum
+		rt = 0.0;
+	}
 	virtual ~id(void)	{}
 	int64_t sn; //scan number
 	int64_t peaks; //number of fragment ions identified
 	vector<int64_t> ks; //vector of kernel unique identifiers
 	double ri; //fraction of ion intensity identified
+	double rt;
 	int64_t pm; //parent ion mass
 	int64_t pz; //parent ion charge
 	int64_t sc; //scan number
@@ -29,6 +39,7 @@ public:
 		pm = rhs.pm;
 		pz = rhs.pz;
 		sc = rhs.sc;
+		rt = rhs.rt;
 		ions = rhs.ions;
 		ks.clear();
 		for(size_t k = 0; k < rhs.ks.size(); k++)	{
@@ -47,8 +58,7 @@ public:
 	//the information from the kernel file
 	bool create(map<string,string>& _p,
 			load_spectra& _l,
-			kernels& _k,
-			map<int64_t,int64_t>& _m);
+			load_kernel& _k);
 	int64_t size(void) { return (int64_t)ids.size(); }
 	
 	vector<id> ids; //identification information

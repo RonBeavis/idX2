@@ -41,7 +41,11 @@ mod records a PTM as a residue, its protein coordinates and the mass of the modi
 class mod
 {
 public:
-	mod(void)	{}
+	mod(void)	{
+		pos = 0; //residue position in protein coordinates
+		res = ""; //the single character abbreviation for the genome-encoded residue at pos
+		mass = 0; //the mass change associated with the PTM
+	}
 	virtual ~mod(void)	{}
 	int64_t pos; //residue position in protein coordinates
 	string res; //the single character abbreviation for the genome-encoded residue at pos
@@ -65,7 +69,7 @@ class create_output
 public:
 	create_output(void);
 	virtual ~create_output(void);
-	bool create(map<string,string>& _p,create_results& _cr);
+	bool create(map<string,string>& _p,create_results& _cr, map<int64_t, set<int64_t> >& _hu);
 private:
 	bool load_mods(void); //loads a map with strings associated with particular modification masses
 	bool find_window(void); //determines a valid window for results, in parent mass ppm
