@@ -94,19 +94,10 @@ inline bool exists (const std::string& name) {
     ifstream f(name.c_str());
     return f.good();
 }
-//
-//	main procedure for performing tasks
-//
-int main(int argc, char* argv[])	{
-	// checks for command line arguments
-	if(argc < 4)	{
-		cout << "usage:\t>idX SPECTRA_FILE KERNEL_FILE OUTPUT_FILE (high|medium|low*) (max_spectra*)" << endl;
-		return 0;
-	}
-	map<string,string> params; //used to store command line and other constant values
-	string version = "idX, 2020.1";
-	params["version"] = version;
 
+int load_params(map<string,string>& params,int argc,char* argv[])	{
+	params["version"] = "idX, 2020.1";
+	params["fragmentation"] = "";
 	int64_t fragment_tolerance = 400; // default fragment mass tolerance
 	try	{
 		if(argc > 4 and strcmp(argv[4],"high") == 0)	{
@@ -173,6 +164,24 @@ int main(int argc, char* argv[])	{
 		cout << "Error (idx:0023): exception thrown trying to assign parent tolerance" << endl;
 		return 1;
 	}
+	return 0;
+
+}
+//
+//	main procedure for performing tasks
+//
+int main(int argc, char* argv[])	{
+	// checks for command line arguments
+	if(argc < 4)	{
+		cout << "usage:\t>idX SPECTRA_FILE KERNEL_FILE OUTPUT_FILE (high|medium|low*) (max_spectra*)" << endl;
+		return 0;
+	}
+	map<string,string> params; //used to store command line and other constant values
+	int ret = load_params(params,argc,argv);
+	if(ret != 0)	{
+		return ret;
+	}
+	int64_t maximum_spectra = atol(params["maximum spectra"].c_str()); //if not -1, determines the number of spectra to consider
 	cout << "\nstart ...\nidX parameters" << "\n"; //output the interpreted command line values for logging
 	if(maximum_spectra != -1)	{
 		cout << "\t   max spectra: " << maximum_spectra << "\n";
@@ -180,19 +189,19 @@ int main(int argc, char* argv[])	{
 	else	{
 		cout << "\t   max spectra: unlimited" << "\n";
 	}
-	cout << "\t  fragment tol: " << fragment_tolerance << " mDa" << endl;
+	cout << "\t  fragment tol: " << params["fragment tolerance"] << " mDa" << endl;
 	cout << "\t    parent tol: " << params["parent tolerance"] << " ppm" << endl;
-	cout << "\t spectrum file: " << spectrum_file << endl;
-	cout << "\t   kernel file: " << kernel_file << endl;
-	cout << "\t   output file: " << output_file << endl;
-	cout << "\t       version: " << version << endl;
+	cout << "\t spectrum file: " << params["spectrum file"] << endl;
+	cout << "\t   kernel file: " << params["kernel file"] << endl;
+	cout << "\t   output file: " << params["output file"] << endl;
+	cout << "\t       version: " << params["version"] << endl;
 	cout << "load & index spectra" << endl;
 	cout.flush();
 	high_resolution_clock::time_point t1 = high_resolution_clock::now(); //begin timing spectrum loading
 	load_spectra ls; 
 	try	{
 		if(!ls.load(params))	{ // load spectra into the ls object
-			cout << "Error (idx:0003): failed to load spectrum file \"" << spectrum_file << "\"" << endl;
+			cout << "Error (idx:0003): failed to load spectrum file \"" << params["spectrum file"] << "\"" << endl;
 			return 1;
 		}
 		if(maximum_spectra != -1)	{ // use the maximum_spectra value, if specified
@@ -200,12 +209,13 @@ int main(int argc, char* argv[])	{
 		} 
 	}
 	catch (...)	{
-		cout << "Error (idx:0024): failed to load spectrum file \"" << spectrum_file << "\"" << endl;
+		cout << "Error (idx:0024): failed to load spectrum file \"" << params["spectrum file"] << "\"" << endl;
 		return 1;
 	}
 	high_resolution_clock::time_point t2 = high_resolution_clock::now(); //end timing spectrum loading and report
 	cout << "	   spectra = " << ls.spectra.size() << "\n";
 	cout << "	spectra &Delta;T = " << duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << endl;
+	ostringstream strStream;
 	strStream.str("");
 	strStream.clear();
 	strStream << (long)ls.spectra.size();
@@ -218,12 +228,12 @@ int main(int argc, char* argv[])	{
 	load_kernel lk; //object that will load kernel information from the specified file
 	try	{
 		if(!lk.load(params,ls,kindex,mindex))	{ //load kernel information 
-			cout << "Error (idx:0005): failed to load kernel file \"" << kernel_file << "\"" << endl;
+			cout << "Error (idx:0005): failed to load kernel file \"" << params["kernel file"] << "\"" << endl;
 			return 1;
 		}
 	}
 	catch (...)	{
-		cout << "Error (idx:0025): failed to load kernel file \"" << kernel_file << "\"\n";
+		cout << "Error (idx:0025): failed to load kernel file \"" << params["kernel file"] << "\"\n";
 		return 1;
 	}
 	t2 = high_resolution_clock::now(); //end timing kernel loading and report

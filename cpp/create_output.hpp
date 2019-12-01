@@ -79,6 +79,7 @@ private:
 	map<int64_t,string> mt;
 	map<int64_t,vector<string> > odict;
 	map<int64_t,int64_t> ppms;
+	string fragmentation;
 	const int64_t c13 = 1003; //mass difference between the A1 and A0 peaks
 	map<int64_t,vector<double> > distribution;
 	//retrieves the ppm column from a formatted output string

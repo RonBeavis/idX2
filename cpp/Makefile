@@ -6,12 +6,9 @@ LINKCC = $(CXX)
 INC_PATH=.
 #CXXFLAGS denotes flags for the C++ compiler
 
-CXX = g++
+CXX = g++-9
 
-#uncomment this line if you are using gcc 4.x
-#CXXFLAGS = -O3 -fopenmp -D_GLIBCXX_PARALLEL -march=native
-#CXXFLAGS = -fprofile-generate
-CXXFLAGS = -O2 -I$(INC_PATH)
+CXXFLAGS = -O2 -I$(INC_PATH) -Wall -std=c++14
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
@@ -37,9 +34,9 @@ clean:
 explain:
 	@echo "The following info represents the program:"
 	@echo "Final exec name: $(EXECUTABLE)"
-	@echo "Source files:       $(SRCS)"
-	@echo "Object files:       $(OBJS)"
-	@echo "Dep files:          $(DEPS)"
+	@echo "Source files: $(SRCS)"
+	@echo "Object files: $(OBJS)"
+	@echo "   Dep files: $(DEPS)"
 
 depend: $(DEPS)
 	@echo "Deps are now up-to-date."

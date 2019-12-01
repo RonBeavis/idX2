@@ -75,6 +75,12 @@ bool create_output::apply_model(int64_t _res,string& _seq,double _pm,int64_t _io
 	if(_res > 100)	{
 		sfactor = 40;
 	}
+	if(fragmentation == "hcd")	{
+		sfactor = 20;
+	}
+	else if(fragmentation == "cid")	{
+		sfactor = 40;
+	}
 	int64_t cells = get_cells(_pm,_res);
 	int64_t total_ions = 2*(int64_t)(_seq.size() - 1);
 	if(total_ions > sfactor)	{
@@ -201,12 +207,19 @@ bool create_output::create(map<string,string>& _params,create_results& _cr)	{
 	double total_prob = 0.0; //sum of all assigned probabilities
 	int64_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match
 	//updated min_c value based on instrument resolution
+	fragmentation = _params["fragmentation"];
 	if(res == 50)	{
 		min_c = 7;
 	}
 	else if(res == 20)	{
 		min_c = 6;
 	}
+	if(fragmentation == "hcd")	{
+		min_c = 6;
+	}		
+	else if(fragmentation == "cid")	{
+		min_c = 8;
+	}		
 	string line; //will contain a JSON Lines JSON object
 	using namespace rapidjson; //simplify calling rapidjson methods
 	int64_t c = 0; //lines read counter
