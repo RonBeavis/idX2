@@ -394,16 +394,16 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 		cout << "     fpr = " << scientific << setprecision(1) << total_prob << endl;
 	}
 	if(low != -20.0 and high != 20.0)	{
-//		double ble = 100.0*((high-low)/41.0)*(double)err/(double)(tot+err);
-		double ble = (20.0 - high) + (low + 20.0);
+		double ble = (20.0 - high) + (low + 20.0) + 2;
+//		cout << ble << ":" << high-low -1 << endl;
 		ble = err/ble;
-		ble = 100.0*(ble*(high-low + 1)/tot);
+		ble = 100.0*(ble*(high - low - 1)/tot);
 		cout << "     baseline error = " << fixed << setprecision(1) << ble << "% (" << err << ")" << endl;
 	}
 	else	{
 		cout << "     baseline error = n/a" << endl;
 	}
-	cout << "     parent ion tolerance = " << fixed << setprecision(0) << low << "," << high << endl;
+	cout << "     parent ion tolerance = " << fixed << setprecision(0) << low+1.0 << "," << high-1.0 << endl;
 	
 
 	ofs.close();
