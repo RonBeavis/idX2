@@ -86,6 +86,8 @@ private:
 	string fragmentation;
 	const int64_t c13 = 1003; //mass difference between the A1 and A0 peaks
 	map<int64_t,vector<double> > distribution;
+	bool create_line(id& _s,double _pm,double _d,double _ppm,double _score,rapidjson::Document& _js,string& _line);
+	bool create_header_line(string& _h);
 	//retrieves the ppm column from a formatted output string
 	double get_ppm(string& t)	{
 		size_t s = t.find("\t");

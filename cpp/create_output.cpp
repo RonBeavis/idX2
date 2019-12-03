@@ -25,6 +25,8 @@ a useful output file specified on the command line
 #include <vector>
 #include "parallel_hashmap/phmap.h"
 using namespace std;
+using namespace rapidjson; 
+//simplify calling rapidjson methods
 #include "load_spectra.hpp"
 #include "load_kernel.hpp"
 #include "create_results.hpp"
@@ -174,6 +176,88 @@ bool create_output::find_window(void)	{
 	return true;
 }
 //
+// creates a single line of TSV formatted output
+// change this method if you want to alter the output format
+//
+bool create_output::create_line(id& _s,double _pm,double _d,double _ppm,double _score,rapidjson::Document& _js,string& _line)	{
+	ostringstream oline;
+	oline << _s.sc << "\t"; // spectrum scan number
+	//write TSV string
+	if(_s.rt != 0)	{ // spectrum retention time
+		oline << fixed << setprecision(3)  << _s.rt << "\t";
+	}
+	else	{
+		oline << "\t";
+	}
+	oline << fixed << setprecision(3);
+	oline << _pm/1000.0 << "\t"; // spectrum parent mass
+	oline << _d << "\t"; // kernel-spectrum parent mass
+	oline << setprecision(1);
+	oline << _ppm << "\t"; // kernel-spectrum parent mass in ppm
+	oline << setprecision(3);
+	oline << _s.pz << "\t"; // spectrum parent charge
+	oline  << _js["lb"].GetString() << "\t"; // kernel label
+	oline << _js["beg"].GetInt() << "\t"; // kernel start residue#
+	oline << _js["end"].GetInt() << "\t"; // kernel end residue #
+	oline << _js["pre"].GetString() << "\t"; // residue N-terminal to kernel
+	oline << _js["seq"].GetString() << "\t"; // kernel sequence
+	oline << _js["post"].GetString() << "\t"; // residue C-terminal to kernel
+	oline << _s.peaks << "\t"; // # of identified spectrum signals
+	const Value& jbs = _js["ns"];
+	int64_t lns = 0;
+	for(SizeType a = 0; a < jbs.Size();a++)	{ // sum potentials z for the kernel
+		lns += jbs[a].GetInt();
+	}
+	oline << fixed << setprecision(2); 
+	if(lns > 0)	{ 
+		oline << _s.ri << "\t"; // fraction of spectrum intensity identified
+		oline << setprecision(1);
+		oline << log(lns)/2.3 << "\t"; // # of times kernel sequence observed (GPMDB)
+		oline << -0.01*_score << "\t"; // score
+	}
+	else	{
+		oline << _s.ri << "\t"; // fraction of spectrum intensity identified
+		oline << setprecision(1);
+		oline << "-" << "\t";// kernel sequence not observed (GPMDB)
+		oline << -0.01*_score << "\t"; // score
+	}
+	//deal with recoding modifications
+	if(_js.HasMember("mods"))	{
+		const Value& jmods = _js["mods"];
+		vector<mod> mods;
+		mod tmod;
+		for(SizeType a = 0; a < jmods.Size();a++)	{
+			const Value& lmods = jmods[a];
+			tmod.pos = lmods[1].GetInt();
+			tmod.res = lmods[0].GetString();
+			tmod.mass = lmods[2].GetInt();
+			mods.push_back(tmod);
+		}
+		sort(mods.begin(),mods.end());
+		for(size_t a = 0; a < mods.size(); a++)	{
+			if(mt.find(mods[a].mass) != mt.end())	{
+				oline << mods[a].res << mods[a].pos << "~" 
+					<< mt.find(mods[a].mass)->second << ";";
+			}
+			else	{
+				oline << mods[a].res << mods[a].pos << "#" 
+					<< mods[a].mass/1000.0 << ";";
+			}
+		}
+	}
+	_line = oline.str();
+	return true;
+}
+//
+// create the header line for the output TSV
+// be sure to align this with the results of create_line
+//
+bool create_output::create_header_line(string& _h)	{
+	_h = "Id\tSub\tScan\tRT(s)\tPeptide mass\tDelta\tppm\tz\tProtein acc\t";
+	_h += "Start\tEnd\tPre\tSequence\tPost\tIC\tRI\tlog(f)\tlog(p)\tModifications";
+	return true;
+}
+//
 //create coordinates the creation of an output file, as specified in _params
 //
 bool create_output::create(map<string,string>& _params,create_results& _cr, map<int64_t, set<int64_t> >& _hu)	{
@@ -225,7 +309,6 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 		min_c = 6;
 	}
 	string line; //will contain a JSON Lines JSON object
-	using namespace rapidjson; //simplify calling rapidjson methods
 	int64_t c = 0; //lines read counter
 	int64_t h = 0; //for checking peptide homology
 	//loop through the JSON Lines entries in the kernel file to find
@@ -291,79 +374,16 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 			if(prob > max_prob)	{
 				max_prob = prob;
 			}
-			//initialize a string-based stream to hold one line of the output file
-			ostringstream oline;
-			oline << sv[s].sc << "\t"; // spectrum scan number
-			//write TSV string
-			if(sv[s].rt != 0)	{ // spectrum retention time
-				oline << fixed << setprecision(3)  << sv[s].rt << "\t";
-			}
-			else	{
-				oline << "\t";
-			}
-			oline << fixed << setprecision(3);
-			oline << pm/1000.0 << "\t"; // spectrum parent mass
-			oline << delta << "\t"; // kernel-spectrum parent mass
-			oline << setprecision(1);
-			oline << ppm << "\t"; // kernel-spectrum parent mass in ppm
-			oline << setprecision(3);
-			oline << sv[s].pz << "\t"; // spectrum parent charge
-			oline  << js["lb"].GetString() << "\t"; // kernel label
-			oline << js["beg"].GetInt() << "\t"; // kernel start residue#
-			oline << js["end"].GetInt() << "\t"; // kernel end residue #
-			oline << js["pre"].GetString() << "\t"; // residue N-terminal to kernel
-			oline << js["seq"].GetString() << "\t"; // kernel sequence
-			oline << js["post"].GetString() << "\t"; // residue C-terminal to kernel
-			oline << sv[s].peaks << "\t"; // # of identified spectrum signals
-			const Value& jbs = js["ns"];
-			int64_t lns = 0;
-			for(SizeType a = 0; a < jbs.Size();a++)	{ // sum potentials z for the kernel
-				lns += jbs[a].GetInt();
-			}
-			oline << fixed << setprecision(2); 
-			if(lns > 0)	{ 
-				oline << sv[s].ri << "\t"; // fraction of spectrum intensity identified
-				oline << setprecision(1);
-				oline << log(lns)/2.3 << "\t"; // # of times kernel sequence observed (GPMDB)
-				oline << -0.01*score << "\t"; // score
-			}
-			else	{
-				oline << sv[s].ri << "\t"; // fraction of spectrum intensity identified
-				oline << setprecision(1);
-				oline << "-" << "\t";// kernel sequence not observed (GPMDB)
-				oline << -0.01*score << "\t"; // score
-			}
-			//deal with recoding modifications
-			if(js.HasMember("mods"))	{
-				const Value& jmods = js["mods"];
-				vector<mod> mods;
-				mod tmod;
-				for(SizeType a = 0; a < jmods.Size();a++)	{
-					const Value& lmods = jmods[a];
-					tmod.pos = lmods[1].GetInt();
-					tmod.res = lmods[0].GetString();
-					tmod.mass = lmods[2].GetInt();
-					mods.push_back(tmod);
-				}
-				sort(mods.begin(),mods.end());
-				for(size_t a = 0; a < mods.size(); a++)	{
-					if(mt.find(mods[a].mass) != mt.end())	{
-						oline << mods[a].res << mods[a].pos << "~" 
-							<< mt.find(mods[a].mass)->second << ";";
-					}
-					else	{
-						oline << mods[a].res << mods[a].pos << "#" 
-							<< mods[a].mass/1000.0 << ";";
-					}
-				}
-			}
+			// construct a line of output for this spectrum object
+			string new_line;
+			create_line(sv[s],pm,delta,ppm,score,js,new_line);
 			//add output file line to mapped vector for spectrum index s
 			if(odict.find(s) != odict.end())	{
-				odict[s].push_back(oline.str());			
+				odict[s].push_back(new_line);			
 			}
 			else	{
 				odict.insert(pair<int64_t,vector<string> >(s,vector<string>()));
-				odict[s].push_back(oline.str());
+				odict[s].push_back(new_line);
 			}
 			//add ppm value to ppms histogram
 			ppms.push_back((int64_t)(0.5+ppm));
@@ -376,8 +396,8 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	ofstream ofs;
 	ofs.open(_params["output file"]); //open output stream
 	//define headers for the output TSV file
-	string header = "Id\tSub\tScan\tRT(s)\tPeptide mass\tDelta\tppm\tz\tProtein acc\t";
-	header += "Start\tEnd\tPre\tSequence\tPost\tIC\tRI\tlog(f)\tlog(p)\tModifications";
+	string header;
+	create_header_line(header);
 	ofs << header << endl;
 	//determine parent mass delta ppm acceptance window
 	find_window();
@@ -394,13 +414,15 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 		for(size_t b = 0; b < odict[a].size(); b++)	{
 			t = odict[a][b];
 			ps_t = (int64_t)(0.5+get_ppm(t));
-			if(ps_t <= high_t and ps_t >= low_t)	{
-				ofs << a << "\t" << sub << "\t" << t << endl;
+			if(ps_t <= high_t and ps_t >= low_t)	{ //apply the parent mass window
+				ofs << a + 1 << "\t";
+				ofs << sub << "\t";
+				ofs << t << endl;
 				sub++;
-				tot++;
+				tot++; //record number of parent mass window hits
 			}
 			else	{
-				err++;
+				err++; // record number of parent mass window misses
 			}
 		}
 	}
