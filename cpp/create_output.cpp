@@ -273,12 +273,16 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 			s = *it;
 			it++;
 			pm = js["pm"].GetFloat();
+			//calculated mass difference, model - observed
 			delta = (sv[s].pm-pm)/1000.0;
+			// convert to parts-per-million
 			ppm = 1.0e6*(sv[s].pm-pm)/pm;
+			// deal with A1 peaks
 			if(delta > 0.5)	{
 				ppm = 1.0e6*(sv[s].pm-c13-pm)/pm;
 			}
 			seq = js["seq"].GetString();
+			// apply math model to result to obtain a probability of stochastic assignment
 			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,score,prob);
 			if(score < score_min or sv[s].ri < 0.20 or sv[s].peaks < min_c)	{
 				continue; //bail out if match does not pass conditions
@@ -289,35 +293,47 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 			}
 			//initialize a string-based stream to hold one line of the output file
 			ostringstream oline;
-			oline << sv[s].sc << "\t";
+			oline << sv[s].sc << "\t"; // spectrum scan number
 			//write TSV string
-			if(sv[s].rt != 0)	{
+			if(sv[s].rt != 0)	{ // spectrum retention time
 				oline << fixed << setprecision(3)  << sv[s].rt << "\t";
 			}
 			else	{
 				oline << "\t";
 			}
-			oline << fixed << setprecision(3) << pm/1000.0 << "\t";
-			oline << delta << "\t" << setprecision(1) << ppm << setprecision(3) << "\t";
-			oline << sv[s].pz << "\t" << js["lb"].GetString() << "\t";
-			oline << js["beg"].GetInt() << "\t" << js["end"].GetInt() << "\t";
-			oline << js["pre"].GetString() << "\t" << js["seq"].GetString() << "\t";
-			oline << js["post"].GetString() << "\t" << sv[s].peaks << "\t";
+			oline << fixed << setprecision(3);
+			oline << pm/1000.0 << "\t"; // spectrum parent mass
+			oline << delta << "\t"; // kernel-spectrum parent mass
+			oline << setprecision(1);
+			oline << ppm << "\t"; // kernel-spectrum parent mass in ppm
+			oline << setprecision(3);
+			oline << sv[s].pz << "\t"; // spectrum parent charge
+			oline  << js["lb"].GetString() << "\t"; // kernel label
+			oline << js["beg"].GetInt() << "\t"; // kernel start residue#
+			oline << js["end"].GetInt() << "\t"; // kernel end residue #
+			oline << js["pre"].GetString() << "\t"; // residue N-terminal to kernel
+			oline << js["seq"].GetString() << "\t"; // kernel sequence
+			oline << js["post"].GetString() << "\t"; // residue C-terminal to kernel
+			oline << sv[s].peaks << "\t"; // # of identified spectrum signals
 			const Value& jbs = js["ns"];
 			int64_t lns = 0;
-			for(SizeType a = 0; a < jbs.Size();a++)	{
+			for(SizeType a = 0; a < jbs.Size();a++)	{ // sum potentials z for the kernel
 				lns += jbs[a].GetInt();
 			}
-			oline << fixed << setprecision(2);
-			if(lns > 0)	{
-				oline << sv[s].ri << "\t" << setprecision(1) 
-						  << log(lns)/2.3 << "\t" << -0.01*score << "\t";
+			oline << fixed << setprecision(2); 
+			if(lns > 0)	{ 
+				oline << sv[s].ri << "\t"; // fraction of spectrum intensity identified
+				oline << setprecision(1);
+				oline << log(lns)/2.3 << "\t"; // # of times kernel sequence observed (GPMDB)
+				oline << -0.01*score << "\t"; // score
 			}
 			else	{
-				oline << sv[s].ri << "\t" << setprecision(1) 
-						  << "-" << "\t" << -0.01*score << "\t";
+				oline << sv[s].ri << "\t"; // fraction of spectrum intensity identified
+				oline << setprecision(1);
+				oline << "-" << "\t";// kernel sequence not observed (GPMDB)
+				oline << -0.01*score << "\t"; // score
 			}
-			//deal with modifications
+			//deal with recoding modifications
 			if(js.HasMember("mods"))	{
 				const Value& jmods = js["mods"];
 				vector<mod> mods;
@@ -395,7 +411,6 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	}
 	if(low != -20.0 and high != 20.0)	{
 		double ble = (20.0 - high) + (low + 20.0) + 2;
-//		cout << ble << ":" << high-low -1 << endl;
 		ble = err/ble;
 		ble = 100.0*(ble*(high - low - 1)/tot);
 		cout << "     baseline error = " << fixed << setprecision(1) << ble << "% (" << err << ")" << endl;
