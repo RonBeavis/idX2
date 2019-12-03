@@ -11,7 +11,6 @@ a useful output file specified on the command line
 */
 #include "pch.h"
 
-#include "rapidjson/document.h"
 #include <fstream>
 #include <cstdio>
 #include <iostream>
@@ -25,7 +24,6 @@ a useful output file specified on the command line
 #include <vector>
 #include "parallel_hashmap/phmap.h"
 using namespace std;
-using namespace rapidjson; 
 //simplify calling rapidjson methods
 #include "load_spectra.hpp"
 #include "load_kernel.hpp"

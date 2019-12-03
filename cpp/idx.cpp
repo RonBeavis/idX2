@@ -68,7 +68,6 @@ variables. When floating point masses are converted to integers, the following m
 
 */
 
-#include "rapidjson/document.h"
 #include "pch.h" //included for compatibility with Visual C++ precompiled header methods
 #include <iostream>
 #include <fstream>

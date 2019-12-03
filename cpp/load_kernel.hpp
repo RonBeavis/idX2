@@ -8,6 +8,9 @@
 
 
 #include <algorithm>
+#include "rapidjson/document.h"
+using namespace rapidjson; //namespace for the rapidjson methods
+
 typedef std::pair <int64_t,int64_t> kPair; // type used to record kernel (parent,fragment) mass pairs
 
 /*

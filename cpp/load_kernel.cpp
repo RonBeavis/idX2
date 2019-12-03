@@ -7,7 +7,6 @@
 */
 #include "pch.h"
 
-#include "rapidjson/document.h"
 #include <fstream>
 #include <cstdio>
 #include <iostream>
@@ -41,7 +40,6 @@ bool load_kernel::load(void)	{
 		return false;
 	}
 	string line;
-	using namespace rapidjson; //namespace for the rapidjson methods
 	const double ft = 1.0/fragment_tolerance; //fragment tolerance
 	const double pt = 1.0/70.0; //maximum parent tolerance in millidaltons
 	const double ppm = 2.0E-5; //parent tolerance in ppm

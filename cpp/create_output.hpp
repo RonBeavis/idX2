@@ -8,6 +8,9 @@
 /*
 hypergeom facilitates the calculation of the PDF of a specified hypergeometric distribution
 */
+#include "rapidjson/document.h"
+using namespace rapidjson;
+
 class hypergeom	{
 public:
 	// specify hypergeometric distribution parameters
@@ -76,6 +79,8 @@ private:
 	int64_t get_cells(double _pm,int64_t _res); //retrieves one of the parameters necessary for a hypergeometric model
 	//calculates a probability model for a particular identification
 	bool apply_model(int64_t _r,string& _s,double _pm,int64_t _ions,int64_t _lspectrum,double& pscore,double& p);
+	bool create_line(id& _s, double _pm, double _d, double _ppm, double _score, Document& _js, string& _line);
+	bool create_header_line(string& _h);
 	double low; // lower value for the ppm window calculated in find_window
 	double high; // upper value for the ppm window calculated in find_window
 	map<int64_t,id> sv;
@@ -86,8 +91,6 @@ private:
 	string fragmentation;
 	const int64_t c13 = 1003; //mass difference between the A1 and A0 peaks
 	map<int64_t,vector<double> > distribution;
-	bool create_line(id& _s,double _pm,double _d,double _ppm,double _score,rapidjson::Document& _js,string& _line);
-	bool create_header_line(string& _h);
 	//retrieves the ppm column from a formatted output string
 	double get_ppm(string& t)	{
 		size_t s = t.find("\t");
