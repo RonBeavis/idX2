@@ -413,7 +413,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 			t = odict[a][b];
 			ps_t = (int64_t)(0.5+get_ppm(t));
 			if(ps_t <= high_t and ps_t >= low_t)	{ //apply the parent mass window
-				ofs << a + 1 << "\t";
+				ofs << a << "\t";
 				ofs << sub << "\t";
 				ofs << t << endl;
 				sub++;

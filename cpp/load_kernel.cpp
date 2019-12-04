@@ -75,17 +75,14 @@ bool load_kernel::load(void)	{
 			continue;
 		}
 		lines++;
-		Document js; //rapidjson main object
-		js.ParseInsitu(buffer);
-		if(!js.HasMember("pm"))	{ //bail out if the JSON object does not have a parent mass
+		char *pPm = std::strstr(buffer,"\"pm\":");
+		if(pPm != NULL)	{
+			pm = atoi(pPm + 5);
+		}
+		else	{
 			continue;
 		}
-		add_hu(js["h"].GetInt(),js["u"].GetInt());
-		if(js["u"].GetInt() != js["h"].GetInt())	{ //bail out if the JSON object is not the first instance of the peptide & modifications
-			hmatched++;
-			continue;
-		}
-		pm = (int64_t)js["pm"].GetInt(); //parent mass
+//		pm = (int64_t)js["pm"].GetInt(); //parent mass
 		mv = (int64_t)(0.5+(double)pm*pt); //reduced parent mass
 		delta = (int64_t)(0.5+(double)pm*ppm); //parent mass tolerance based on ppm
 		//check parent mass for ppm tolerance
@@ -105,10 +102,19 @@ bool load_kernel::load(void)	{
 			skipped++;
 			continue;
 		}
+		Document js; //rapidjson main object
+		js.ParseInsitu(buffer);
+		if(!js.HasMember("pm"))	{ //bail out if the JSON object does not have a parent mass
+			continue;
+		}
+		add_hu(js["h"].GetInt(),js["u"].GetInt());
+		if(js["u"].GetInt() != js["h"].GetInt())	{ //bail out if JSON is not 1st instance of the peptide + mods
+			hmatched++;
+			continue;
+		}
 		u = (int64_t)js["u"].GetInt();  //record the unique kernel id
 		pmindex[u] = pm;
-		const Value& jbs = js["bs"]; //retrieve reference to the b-type fragment fragments                                                           
-//		size_t vpos = 0;
+		const Value& jbs = js["bs"]; //retrieve reference to the b-type fragments                                                           
 		pr.first = (int64_t)mv; //initialize the parent mass element of the (parent:fragment) pair
 		for(SizeType a = 0; a < jbs.Size();a++)	{
 			val = (int64_t)(0.5+jbs[a].GetDouble()*ft); //reduced fragment mass

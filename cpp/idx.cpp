@@ -271,7 +271,7 @@ int main(int argc, char* argv[])	{
 	delete pThreads;
 	delete pHandle;
 	t2 = high_resolution_clock::now(); //end timing kernel loading and report
-	cout << "	   kernels = " << lk_main.kerns.size() << "\n";
+	cout << "	    kernel pairs = " << lk_main.kerns.size() << "\n";
 	cout << "	kernels &Delta;T = " 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
 				<< " s" << endl;
