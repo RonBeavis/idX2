@@ -64,21 +64,12 @@ bool load_spectra::load(map<string,string>& _params)	{
 			parent = atof(temp.c_str());
 		}
 		else if(temp.find("BEGIN IONS") != temp.npos)	{ //tag starting a single spectrum
-			desc = "";
-		}
-		else if(temp.find("#") == 0)	{ //comment line
-			desc += line+1;
-			desc += " ";
 		}
 		else if(temp.find("TITLE=") != temp.npos)	{ //tag for the description information
-			desc += temp.substr(equals+1,size-equals+1);
-			desc += " ";
+			desc = temp.substr(equals+1,size-equals+1);
 		}
 		else if(temp.find("RTINSECONDS=") != temp.npos)	{ //tag for retention time information
 			run_time = temp.substr(equals+1,size-equals+1);
-			desc += "RTINSECONDS=";
-			desc += run_time;
-			desc += " ";
 			rt = (double)atof(run_time.c_str());
 		}
 		else if(temp.find("CHARGE=") != temp.npos)	{ //tag for parent ion charge
@@ -113,6 +104,11 @@ bool load_spectra::load(map<string,string>& _params)	{
 				//substitute ordinal value for scan number, if no scan available
 				if(scan == 0)	{
 					sp.sc = s;
+					equals = desc.find("scan=");
+					if(equals != desc.npos)	{
+						equals += 5;
+						sp.sc = atol(desc.substr(equals,size-equals).c_str());
+					}
 				}
 				else	{
 					sp.sc = scan;

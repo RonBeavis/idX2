@@ -324,7 +324,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 			cout.flush();
 		}
 		c++; //increment line count
-		if(hu_set.find(c-1) == hu_set.end())	{
+		if(hu_set.find(c-1) == hu_set.end())	{ //bail out if the line was not in solution
 			continue;
 		}
 		Document js; //rapidjson main object

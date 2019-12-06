@@ -59,6 +59,7 @@ bool load_kernel::load(void)	{
 	kPair pr;
 	const int max_buffer = 1024*16-1;
 	char *buffer = new char[max_buffer+1];
+	char *pPm = NULL;
 	//loop through kernel lines
 	while(::fgets(buffer,max_buffer,pFile) != NULL)	{
 		//print keep-alive text for logging
@@ -75,7 +76,8 @@ bool load_kernel::load(void)	{
 			continue;
 		}
 		lines++;
-		char *pPm = std::strstr(buffer,"\"pm\":");
+		// quickly get the pm value without loading the rapidjson::Document
+		pPm = std::strstr(buffer,"\"pm\":");
 		if(pPm != NULL)	{
 			pm = atoi(pPm + 5);
 		}
