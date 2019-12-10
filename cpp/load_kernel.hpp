@@ -19,6 +19,33 @@ reading the kernel file with load_kernel. kindex
 is the primary record of information. mvindex records the
 parent ion masses that have at least one entry in kindex.
 */
+
+class jsObject
+{
+public:
+	jsObject(void)	{pm = 0; u = 0; h = 0; 
+			pBuffer = new unsigned char[1024*16-1];
+			pKey = new char[256];
+	}
+	virtual ~jsObject(void)	{delete pKey;delete pBuffer;}
+	int64_t pm;
+	int64_t u;
+	int64_t h;
+	unsigned int size;
+	vector<int64_t> bs;
+	vector<int64_t> ys;
+	char *pKey;
+	unsigned char *pBuffer;
+	string key;
+	void reset(void)	{
+		pm = 0;
+		u = 0;
+		h = 0;
+		bs.clear();
+		ys.clear();
+	}
+};
+
 class kernels
 {
 public:
@@ -44,6 +71,8 @@ public:
 	//load uses spectrum information and the kernel file specified in _p
 	//to retrieve information about candidate kernels that will be used in the peptide-sequence matching process
 	bool load(void);
+	bool load_binary(void);
+	bool get_next(FILE *_pFile,jsObject& _js);
 	string kfile; //path to the kernel file
 	double fragment_tolerance; //fragment mass tolerance in mDa
 	kernels kerns; //object that will contain kernel information

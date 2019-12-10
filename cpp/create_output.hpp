@@ -11,6 +11,71 @@ hypergeom facilitates the calculation of the PDF of a specified hypergeometric d
 #include "rapidjson/document.h"
 using namespace rapidjson;
 
+class mod
+{
+public:
+	mod(void)	{
+		pos = 0; //residue position in protein coordinates
+		res = ""; //the single character abbreviation for the genome-encoded residue at pos
+		mass = 0; //the mass change associated with the PTM
+	}
+	virtual ~mod(void)	{}
+	int64_t pos; //residue position in protein coordinates
+	string res; //the single character abbreviation for the genome-encoded residue at pos
+	int64_t mass; //the mass change associated with the PTM
+	mod& operator=(const mod &rhs)	{ //copy operator
+		res = rhs.res;
+		pos = rhs.pos;
+		mass = rhs.mass;
+		return *this;
+	}
+	bool operator<( const mod& rhs ) const { //less than operator, used for formating output
+		return pos < rhs.pos; 
+	}
+};
+
+class osObject
+{
+public:
+	osObject(void)	{pm = 0; u = 0; h = 0; pz = 0;
+			pBuffer = new unsigned char[1024*16-1];
+			pKey = new char[256];
+	}
+	virtual ~osObject(void)	{delete pKey;delete pBuffer;}
+	int64_t pm;
+	int64_t u;
+	int64_t h;
+	int64_t pz;
+	int64_t beg;
+	int64_t end;
+	vector<int64_t> ns;
+	mod mod_temp;
+	vector<mod> mods;
+	vector<mod> savs;
+	unsigned int size;
+	char *pKey;
+	unsigned char *pBuffer;
+	string key;
+	string seq;
+	string pre;
+	string post;
+	string lb;
+	void reset(void)	{
+		pm = 0;
+		u = 0;
+		h = 0;
+		pz = 0;
+		ns.clear();
+		mods.clear();
+		savs.clear();
+		key.clear();
+		seq.clear();
+		pre.clear();
+		post.clear();
+		lb.clear();
+	}
+};
+
 class hypergeom	{
 public:
 	// specify hypergeometric distribution parameters
@@ -41,28 +106,6 @@ public:
 /*
 mod records a PTM as a residue, its protein coordinates and the mass of the modification
 */
-class mod
-{
-public:
-	mod(void)	{
-		pos = 0; //residue position in protein coordinates
-		res = ""; //the single character abbreviation for the genome-encoded residue at pos
-		mass = 0; //the mass change associated with the PTM
-	}
-	virtual ~mod(void)	{}
-	int64_t pos; //residue position in protein coordinates
-	string res; //the single character abbreviation for the genome-encoded residue at pos
-	int64_t mass; //the mass change associated with the PTM
-	mod& operator=(const mod &rhs)	{ //copy operator
-		pos = rhs.pos;
-		res = rhs.res;
-		mass = rhs.mass;
-		return *this;
-	}
-	bool operator<( const mod& rhs ) const { //less than operator, used for formating output
-		return pos < rhs.pos; 
-	}
-};
 /*
 create_output takes peptide-to-spectrum matches and generates a tab-separated value output
 file describing those identifications.
@@ -73,6 +116,7 @@ public:
 	create_output(void);
 	virtual ~create_output(void);
 	bool create(map<string,string>& _p,create_results& _cr, map<int64_t, set<int64_t> >& _hu);
+	bool create_binary(map<string,string>& _p,create_results& _cr, map<int64_t, set<int64_t> >& _hu);
 private:
 	bool load_mods(void); //loads a map with strings associated with particular modification masses
 	bool find_window(void); //determines a valid window for results, in parent mass ppm
@@ -80,7 +124,9 @@ private:
 	//calculates a probability model for a particular identification
 	bool apply_model(int64_t _r,string& _s,double _pm,int64_t _ions,int64_t _lspectrum,double& pscore,double& p);
 	bool create_line(id& _s, double _pm, double _d, double _ppm, double _score, Document& _js, string& _line);
+	bool create_line_binary(id& _s, double _pm, double _d, double _ppm, double _score, osObject& _js, string& _line);
 	bool create_header_line(string& _h);
+	bool get_next(FILE *_pFile,osObject& _os);
 	double low; // lower value for the ppm window calculated in find_window
 	double high; // upper value for the ppm window calculated in find_window
 	map<int64_t,id> sv;
@@ -91,6 +137,7 @@ private:
 	string fragmentation;
 	const int64_t c13 = 1003; //mass difference between the A1 and A0 peaks
 	map<int64_t,vector<double> > distribution;
+	bool get_next(FILE *_pFile,jsObject& _js);
 	//retrieves the ppm column from a formatted output string
 	double get_ppm(string& t)	{
 		size_t s = t.find("\t");
