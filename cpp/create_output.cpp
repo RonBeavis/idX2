@@ -428,7 +428,7 @@ bool create_output::get_next(FILE *_pFile,osObject& _js)
 }
 
 //
-//create coordinates the creation of an output file, as specified in _params
+//creates an output file, as specified in _params for a JSON binary kernel
 //
 bool create_output::create_binary(map<string,string>& _params,create_results& _cr, map<int64_t, set<int64_t> >& _hu)	{
 	FILE *pFile = ::fopen(_params["kernel file"].c_str(),"rb");
@@ -559,8 +559,17 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 	}
 	::fclose(pFile);
 	//open a file stream to output information in odict
+	dump_lines(_params["output file"],total_prob);
+	cout << endl;
+	cout.flush();
+	return true;
+}
+//
+// Serializes the formulated lines to a specified output file
+//
+bool create_output::dump_lines(string& _ofile,double _tp)	{
 	ofstream ofs;
-	ofs.open(_params["output file"]); //open output stream
+	ofs.open(_ofile); //open output stream
 	//define headers for the output TSV file
 	string header;
 	create_header_line(header);
@@ -592,10 +601,11 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 			}
 		}
 	}
+	ofs.close();
 	//output some additional information for logging
 	cout << "\n     lines = " << tot << endl;
-	if(total_prob > 0)	{
-		cout << "     fpr = " << scientific << setprecision(1) << total_prob << endl;
+	if(_tp > 0)	{
+		cout << "     fpr = " << scientific << setprecision(1) << _tp << endl;
 	}
 	if(low != -20.0 and high != 20.0)	{
 		double ble = (20.0 - high) + (low + 20.0) + 2;
@@ -607,16 +617,11 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 		cout << "     baseline error = n/a" << endl;
 	}
 	cout << "     parent ion tolerance = " << fixed << setprecision(0) << low+1.0 << "," << high-1.0 << endl;
-	
-
-	ofs.close();
-	cout << endl;
-	cout.flush();
 	return true;
 }
 
 //
-//create coordinates the creation of an output file, as specified in _params
+//creates an output file, as specified in _params for a JSON kernel
 //
 bool create_output::create(map<string,string>& _params,create_results& _cr, map<int64_t, set<int64_t> >& _hu)	{
 	FILE *pFile = ::fopen(_params["kernel file"].c_str(),"r");
@@ -751,57 +756,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	::fclose(pFile);
 	delete buffer;
 	//open a file stream to output information in odict
-	ofstream ofs;
-	ofs.open(_params["output file"]); //open output stream
-	//define headers for the output TSV file
-	string header;
-	create_header_line(header);
-	ofs << header << endl;
-	//determine parent mass delta ppm acceptance window
-	find_window();
-	int64_t err = 0;
-	int64_t sub = 0;
-	int64_t tot = 0;
-	string t;
-	//loop through result lines and record the information
-	int64_t low_t = (int64_t)(0.5 + low);
-	int64_t high_t = (int64_t)(0.5 + high);
-	int64_t ps_t = 0;
-	for(int64_t a = 0; a < (int64_t)odict.size(); a++)	{
-		sub = 1;
-		for(size_t b = 0; b < odict[a].size(); b++)	{
-			t = odict[a][b];
-			ps_t = (int64_t)(0.5+get_ppm(t));
-			if(ps_t <= high_t and ps_t >= low_t)	{ //apply the parent mass window
-				ofs << a << "\t";
-				ofs << sub << "\t";
-				ofs << t << endl;
-				sub++;
-				tot++; //record number of parent mass window hits
-			}
-			else	{
-				err++; // record number of parent mass window misses
-			}
-		}
-	}
-	//output some additional information for logging
-	cout << "\n     lines = " << tot << endl;
-	if(total_prob > 0)	{
-		cout << "     fpr = " << scientific << setprecision(1) << total_prob << endl;
-	}
-	if(low != -20.0 and high != 20.0)	{
-		double ble = (20.0 - high) + (low + 20.0) + 2;
-		ble = err/ble;
-		ble = 100.0*(ble*(high - low - 1)/tot);
-		cout << "     baseline error = " << fixed << setprecision(1) << ble << "% (" << err << ")" << endl;
-	}
-	else	{
-		cout << "     baseline error = n/a" << endl;
-	}
-	cout << "     parent ion tolerance = " << fixed << setprecision(0) << low+1.0 << "," << high-1.0 << endl;
-	
-
-	ofs.close();
+	dump_lines(_params["output file"],total_prob);
 	cout << endl;
 	cout.flush();
 	return true;

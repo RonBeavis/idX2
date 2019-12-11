@@ -115,7 +115,9 @@ class create_output
 public:
 	create_output(void);
 	virtual ~create_output(void);
+	// generates a TSV formated output file from results using a JSON kernel
 	bool create(map<string,string>& _p,create_results& _cr, map<int64_t, set<int64_t> >& _hu);
+	// generates a TSV formated output file from results using a JSON binary kernel
 	bool create_binary(map<string,string>& _p,create_results& _cr, map<int64_t, set<int64_t> >& _hu);
 private:
 	bool load_mods(void); //loads a map with strings associated with particular modification masses
@@ -125,8 +127,9 @@ private:
 	bool apply_model(int64_t _r,string& _s,double _pm,int64_t _ions,int64_t _lspectrum,double& pscore,double& p);
 	bool create_line(id& _s, double _pm, double _d, double _ppm, double _score, Document& _js, string& _line);
 	bool create_line_binary(id& _s, double _pm, double _d, double _ppm, double _score, osObject& _js, string& _line);
-	bool create_header_line(string& _h);
-	bool get_next(FILE *_pFile,osObject& _os);
+	bool create_header_line(string& _h); // generates a TSV formated header line for output
+	bool get_next(FILE *_pFile,osObject& _os); // gets the next osObject from a JSON binary file
+	bool dump_lines(string& _ofile,double _tp); // serializes odict lines into a file
 	double low; // lower value for the ppm window calculated in find_window
 	double high; // upper value for the ppm window calculated in find_window
 	map<int64_t,id> sv;
@@ -137,7 +140,6 @@ private:
 	string fragmentation;
 	const int64_t c13 = 1003; //mass difference between the A1 and A0 peaks
 	map<int64_t,vector<double> > distribution;
-	bool get_next(FILE *_pFile,jsObject& _js);
 	//retrieves the ppm column from a formatted output string
 	double get_ppm(string& t)	{
 		size_t s = t.find("\t");
