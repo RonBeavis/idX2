@@ -74,6 +74,7 @@ variables. When floating point masses are converted to integers, the following m
 #include <cstdio>
 #include <string>
 #include <sstream>
+#include <iomanip>
 #include <map>
 #include <set>
 #include <vector>
@@ -202,7 +203,7 @@ int main(int argc, char* argv[])	{
 	cout << "\t   kernel file: " << params["kernel file"] << endl;
 	cout << "\t   output file: " << params["output file"] << endl;
 	cout << "\t       version: " << params["version"] << endl;
-	cout << "load & index spectra" << endl;
+	cout << endl << "load & index spectra" << endl;
 	cout.flush();
 	high_resolution_clock::time_point t1 = high_resolution_clock::now(); //begin timing spectrum loading
 	load_spectra ls; 
@@ -220,8 +221,8 @@ int main(int argc, char* argv[])	{
 		return 1;
 	}
 	high_resolution_clock::time_point t2 = high_resolution_clock::now(); //end timing spectrum loading and report
-	cout << "	   spectra = " << ls.spectra.size() << endl;
-	cout << "	spectra &Delta;T = " 
+	cout << endl << "  spectra = " << ls.spectra.size() << endl;
+	cout << "  spectra &Delta;T = " 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
 				<< " s" << endl;
 	ostringstream strStream; //using ostringstream to avoid potentially unsafe sprintf
@@ -230,7 +231,7 @@ int main(int argc, char* argv[])	{
 	strStream << (long)ls.spectra.size();
 	params["spectra"] = strStream.str();
 	t1 = high_resolution_clock::now(); //begin timing kernel loading
-	cout << "load & index kernel"  << endl;
+	cout << endl << "load & index kernel"  << endl;
 	cout.flush();
 
 	long max_threads = 2;
@@ -283,12 +284,12 @@ int main(int argc, char* argv[])	{
 	delete pThreads;
 	delete pHandle;
 	t2 = high_resolution_clock::now(); //end timing kernel loading and report
-	cout << "	    kernel pairs = " << lk_main.kerns.size() << endl;
-	cout << "	kernels &Delta;T = " 
+	cout << endl << "  kernel pairs = " << lk_main.kerns.size() << endl;
+	cout << "  kernels &Delta;T = "  << fixed << setprecision(3) 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
 				<< " s" << endl;
 	t1 = high_resolution_clock::now(); //begin timing peptide-to-spectrum matching
-	cout << "perform ids"  << endl;
+	cout << endl << "perform ids"  << endl;
 	cout.flush();
 	create_results cr; //object that will contain match information
 	try	{
@@ -302,11 +303,11 @@ int main(int argc, char* argv[])	{
 		return 1;
 	}
 	t2 = high_resolution_clock::now(); //end timing peptide-to-spectrum matching and report
-	cout << "	   results = " << cr.size() << endl;
-	cout << "	results &Delta;T = " 
+	cout << endl << "  results = " << cr.size() << endl;
+	cout << "  results &Delta;T = "  << fixed << setprecision(3)
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
 				<< " s" << endl;
-	cout << "create report"  << endl;
+	cout << endl << "create models & report"  << endl;
 	cout.flush();
 	t1 = high_resolution_clock::now(); //begin timing output file creation
 	try	{
@@ -329,7 +330,9 @@ int main(int argc, char* argv[])	{
 		return 1;
 	}
 	t2 = high_resolution_clock::now(); //end timing output file creation
-	cout << "... done" << endl;
+	cout << "  reporting &Delta;T = " << fixed << setprecision(3) 
+				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << endl;
+	cout << endl << "... done" << endl;
 	return 0;
 }
 

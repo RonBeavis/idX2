@@ -603,7 +603,9 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	}
 	ofs.close();
 	//output some additional information for logging
-	cout << "\n     lines = " << tot << endl;
+	cout << endl << endl;
+	cout << "  report summary:" << endl;
+	cout << "     lines = " << tot << endl;
 	if(_tp > 0)	{
 		cout << "     fpr = " << scientific << setprecision(1) << _tp << endl;
 	}
