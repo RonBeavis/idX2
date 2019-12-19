@@ -150,18 +150,40 @@ public:
 			p.first = (int64_t)(0.5+(double)m*res);
 			pr.second = p.first;
 			spairs.insert(pr);
+			pr.first += 1;
+			spairs.insert(pr);
+			pr.first -= 2;
+			spairs.insert(pr);
+			pr.first += 1;
 			p.second = pMs[a].second;
 			mis.push_back(p);
 			p.first -= 1;
 			pr.second = p.first;
 			spairs.insert(pr);
+			pr.first += 1;
+			spairs.insert(pr);
+			pr.first -= 2;
+			spairs.insert(pr);
+			pr.first += 1;
 			mis.push_back(p);
 			p.first += 2;
 			pr.second = p.first;
 			spairs.insert(pr);
+			pr.first += 1;
+			spairs.insert(pr);
+			pr.first -= 2;
+			spairs.insert(pr);
+			pr.first += 1;
 			mis.push_back(p);
 			is += 3*p.second;
 		}
+/*		if(sc == 3485)	{
+			auto itp = spairs.begin();
+			while(itp != spairs.end())	{
+				cout << itp->first << "\t" << itp->second << "\t" << pm << endl;
+				itp++;
+			}
+		} */
 		isum = is; //note: this value is 3x the actual sum of intensities
 		return true;
 	}

@@ -141,6 +141,11 @@ private:
 	const int64_t c13 = 1003; //mass difference between the A1 and A0 peaks
 	map<int64_t,vector<double> > distribution;
 	//retrieves the ppm column from a formatted output string
+	int64_t get_scan(string& t)	{
+		size_t s = t.find("\t");
+		s = t.find("\t",s+1);
+		return (int64_t)atoi(t.c_str());
+	}
 	double get_ppm(string& t)	{
 		size_t s = t.find("\t");
 		s = t.find("\t",s+1);

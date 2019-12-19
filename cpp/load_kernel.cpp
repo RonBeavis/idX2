@@ -49,6 +49,7 @@ bool load_kernel::load(void)	{
 	int64_t hmatched = 0;
 	int64_t pm = 0;
 	int64_t mv = 0;
+	int64_t mv1 = 0;
 	int64_t u = 0;
 	const int64_t c13 = 1003; //difference between the A0 and A1 peaks
 	int64_t val = 0;
@@ -85,8 +86,8 @@ bool load_kernel::load(void)	{
 			continue;
 		}
 
-//		pm = (int64_t)js["pm"].GetInt(); //parent mass
 		mv = (int64_t)(0.5+(double)pm*pt); //reduced parent mass
+		mv1 = 0;
 		delta = (int64_t)(0.5+(double)pm*ppm); //parent mass tolerance based on ppm
 		//check parent mass for ppm tolerance
 		lower = pm-delta;
@@ -99,6 +100,12 @@ bool load_kernel::load(void)	{
 		lower = pm+c13-delta;
 		itppm = sp_set.lower_bound(lower);
 		if(itppm != itsp and (*itppm-lower) <= 2*delta)	{
+			if(skip)	{
+				mv = (int64_t)(0.5+(double)(pm+c13)*pt); //reduced parent mass
+			}
+			else	{
+				mv1 = (int64_t)(0.5+(double)(pm+c13)*pt);
+			}
 			skip = false;
 		}
 		if(skip)	{ //bail out if the parent mass doesn't match
@@ -122,26 +129,44 @@ bool load_kernel::load(void)	{
 		for(SizeType a = 0; a < jbs.Size();a++)	{
 			val = (int64_t)(0.5+jbs[a].GetDouble()*ft); //reduced fragment mass
 			pr.second = val;
+			pr.first = mv;
 			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-				continue;
+				if(mv1 != 0)	{
+					pr.first = mv1;
+					if(spairs.find(pr) == spairs.end())	{
+						continue;
+					}
+				}
+				else	{
+					continue;
+				}
 			}
 			if(kerns.kindex.find(pr) == kerns.kindex.end())	{ 
 				kerns.add_pair(pr); //create a new vector for the object
 			}
-			kerns.mvindex.insert((int64_t)mv); //add parent mass to set
+			kerns.mvindex.insert(pr.first); //add parent mass to set
 			kerns.kindex[pr].push_back(u); //add kernel id to vector
 		}
 		const Value& jys = js["ys"]; //retrieve reference to the y-type fragments
 		for(SizeType a = 0; a < jys.Size();a++)	{
 			val = (int64_t)(0.5+jys[a].GetDouble()*ft); //reducted fragment mass
 			pr.second = val;
+			pr.first = mv;
 			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-				continue;
+				if(mv1 != 0)	{
+					pr.first = mv1;
+					if(spairs.find(pr) == spairs.end())	{
+						continue;
+					}
+				}
+				else	{
+					continue;
+				}
 			}
 			if(kerns.kindex.find(pr) == kerns.kindex.end())	{
 				kerns.add_pair(pr); //create a new vector for the object
 			}
-			kerns.mvindex.insert((int64_t)mv); //add parent mass to set
+			kerns.mvindex.insert(pr.first); //add parent mass to set
 			kerns.kindex[pr].push_back(u);//add kernel id to vector
 		}
 	}
@@ -237,6 +262,7 @@ bool load_kernel::load_binary(void)	{
 	int64_t hmatched = 0;
 	int64_t pm = 0;
 	int64_t mv = 0;
+	int64_t mv1 = 0;
 	int64_t u = 0;
 	const int64_t c13 = 1003; //difference between the A0 and A1 peaks
 	int64_t val = 0;
@@ -279,7 +305,13 @@ bool load_kernel::load_binary(void)	{
 		//check A1 mass for ppm tolerance
 		lower = pm+c13-delta;
 		itppm = sp_set.lower_bound(lower);
-		if(itppm != itsp and (*itppm-lower) <= 2*delta)	{
+		if(pm > 1500000 and itppm != itsp and (*itppm-lower) <= 2*delta)	{
+			if(skip)	{
+				mv = (int64_t)(0.5+(double)(pm+c13)*pt); //reduced parent mass
+			}
+			else	{
+				mv1 = (int64_t)(0.5+(double)(pm+c13)*pt);
+			}
 			skip = false;
 		}
 		if(skip)	{ //bail out if the parent mass doesn't match
@@ -297,25 +329,43 @@ bool load_kernel::load_binary(void)	{
 		for(size_t a = 0; a < js.bs.size();a++)	{
 			val = (int64_t)(0.5+js.bs[a]*ft); //reduced fragment mass
 			pr.second = val;
+			pr.first = mv;
 			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-				continue;
+				if(mv1 != 0)	{
+					pr.first = mv1;
+					if(spairs.find(pr) == spairs.end())	{
+						continue;
+					}
+				}
+				else	{
+					continue;
+				}
 			}
 			if(kerns.kindex.find(pr) == kerns.kindex.end())	{ 
 				kerns.add_pair(pr); //create a new vector for the object
 			}
-			kerns.mvindex.insert((int64_t)mv); //add parent mass to set
+			kerns.mvindex.insert(pr.first); //add parent mass to set
 			kerns.kindex[pr].push_back(u); //add kernel id to vector
 		}
 		for(size_t a = 0; a < js.ys.size();a++)	{
 			val = (int64_t)(0.5+js.ys[a]*ft); //reducted fragment mass
 			pr.second = val;
+			pr.first = mv;
 			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-				continue;
+				if(mv1 != 0)	{
+					pr.first = mv1;
+					if(spairs.find(pr) == spairs.end())	{
+						continue;
+					}
+				}
+				else	{
+					continue;
+				}
 			}
 			if(kerns.kindex.find(pr) == kerns.kindex.end())	{
 				kerns.add_pair(pr); //create a new vector for the object
 			}
-			kerns.mvindex.insert((int64_t)mv); //add parent mass to set
+			kerns.mvindex.insert(pr.first); //add parent mass to set
 			kerns.kindex[pr].push_back(u);//add kernel id to vector
 		}
 	}

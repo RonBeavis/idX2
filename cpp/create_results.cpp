@@ -148,7 +148,7 @@ bool create_results::create(map<string, string>& _p, //parameters
 		for(size_t b = 0; b < ident.size(); b++)	{
 			for(size_t c = 0; c < ident[b].size(); c++)	{
 				int64_t a = ident[b][c];
-				if(fabs(ms[b]-_k.pmindex[a]) < ppm*ms[b])	{
+				if(true or fabs(ms[b]-_k.pmindex[a]) < ppm*ms[b])	{
 					aok.insert(a);
 				}
 			}

@@ -584,22 +584,36 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	int64_t low_t = (int64_t)(0.5 + low);
 	int64_t high_t = (int64_t)(0.5 + high);
 	int64_t ps_t = 0;
+	int64_t scan = 0;
+	multimap<int64_t,string> ostrings;
+	pair<int64_t,string> opair;
+	char *pString =  new char[1024*8];
 	for(int64_t a = 0; a < (int64_t)odict.size(); a++)	{
 		sub = 1;
 		for(size_t b = 0; b < odict[a].size(); b++)	{
 			t = odict[a][b];
 			ps_t = (int64_t)(0.5+get_ppm(t));
+			sprintf(pString,"%li\t%li\t%s",(long)a,(long)sub,t.c_str());
+			header = pString;
+			scan = get_scan(t);
+			opair.first = scan;
+			opair.second = header;
 			if(ps_t <= high_t and ps_t >= low_t)	{ //apply the parent mass window
-				ofs << a << "\t";
-				ofs << sub << "\t";
-				ofs << t << endl;
+				ostrings.insert(opair);
 				sub++;
 				tot++; //record number of parent mass window hits
 			}
 			else	{
+//				ostrings.insert(opair);
 				err++; // record number of parent mass window misses
 			}
 		}
+	}
+	delete pString;
+	auto itS = ostrings.begin();
+	while(itS != ostrings.end())	{
+		ofs << itS->second << endl;
+		itS++;
 	}
 	ofs.close();
 	//output some additional information for logging
@@ -726,8 +740,14 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 			// convert to parts-per-million
 			ppm = 1.0e6*(sv[s].pm-pm)/pm;
 			// deal with A1 peaks
-			if(delta > 0.5)	{
+			if(delta > 0.5 and delta < 1.5)	{
 				ppm = 1.0e6*(sv[s].pm-c13-pm)/pm;
+			}
+			else if(delta > 1.5)	{
+				ppm = 1.0e6*(sv[s].pm-2*c13-pm)/pm;
+			}
+			if(fabs(ppm) > 20.0)	{
+				continue;
 			}
 			seq = js["seq"].GetString();
 			// apply math model to result to obtain a probability of stochastic assignment
