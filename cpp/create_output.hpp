@@ -20,9 +20,9 @@ public:
 		mass = 0; //the mass change associated with the PTM
 	}
 	virtual ~mod(void)	{}
-	int64_t pos; //residue position in protein coordinates
+	int32_t pos; //residue position in protein coordinates
 	string res; //the single character abbreviation for the genome-encoded residue at pos
-	int64_t mass; //the mass change associated with the PTM
+	int32_t mass; //the mass change associated with the PTM
 	mod& operator=(const mod &rhs)	{ //copy operator
 		res = rhs.res;
 		pos = rhs.pos;
@@ -42,13 +42,13 @@ public:
 			pKey = new char[256];
 	}
 	virtual ~osObject(void)	{delete pKey;delete pBuffer;}
-	int64_t pm;
-	int64_t u;
-	int64_t h;
-	int64_t pz;
-	int64_t beg;
-	int64_t end;
-	vector<int64_t> ns;
+	int32_t pm;
+	int32_t u;
+	int32_t h;
+	int32_t pz;
+	int32_t beg;
+	int32_t end;
+	vector<int32_t> ns;
 	mod mod_temp;
 	vector<mod> mods;
 	vector<mod> savs;
@@ -79,21 +79,21 @@ public:
 class hypergeom	{
 public:
 	// specify hypergeometric distribution parameters
-	hypergeom(int64_t _n,int64_t _r,int64_t _N)	{n = _n; r = _r; N = _N;}
+	hypergeom(int32_t _n,int32_t _r,int32_t _N)	{n = _n; r = _r; N = _N;}
 	virtual ~hypergeom() {}
-	int64_t n;
-	int64_t N;
-	int64_t r;
-	double pdf(int64_t k)	{ //calculate the PDF
+	int32_t n;
+	int32_t N;
+	int32_t r;
+	double pdf(int32_t k)	{ //calculate the PDF
 		double top = st(n)+st(r)+st(N-n)+st(N-r);
 		double bottom = st(N)+st(k)+st(n-k)+st(r-k)+st(N-n-r+k);
 		double lp = top - bottom;
 		return exp(lp);
 	}
-	double st(int64_t _n)	{ //either directly calculate the log of a factorial or use Sterling's approximation
+	double st(int32_t _n)	{ //either directly calculate the log of a factorial or use Sterling's approximation
 		if(_n < 50)	{
 			double f = 1.0;
-			for(int64_t i = 1; i <= _n; i++)    {
+			for(int32_t i = 1; i <= _n; i++)    {
         			f *= (double)i;
    			 }
 			return log(f);
@@ -116,15 +116,15 @@ public:
 	create_output(void);
 	virtual ~create_output(void);
 	// generates a TSV formated output file from results using a JSON kernel
-	bool create(map<string,string>& _p,create_results& _cr, map<int64_t, set<int64_t> >& _hu);
+	bool create(map<string,string>& _p,create_results& _cr, map<int32_t, set<int32_t> >& _hu);
 	// generates a TSV formated output file from results using a JSON binary kernel
-	bool create_binary(map<string,string>& _p,create_results& _cr, map<int64_t, set<int64_t> >& _hu);
+	bool create_binary(map<string,string>& _p,create_results& _cr, map<int32_t, set<int32_t> >& _hu);
 private:
 	bool load_mods(void); //loads a map with strings associated with particular modification masses
 	bool find_window(void); //determines a valid window for results, in parent mass ppm
-	int64_t get_cells(double _pm,int64_t _res); //retrieves one of the parameters necessary for a hypergeometric model
+	int32_t get_cells(double _pm,int32_t _res); //retrieves one of the parameters necessary for a hypergeometric model
 	//calculates a probability model for a particular identification
-	bool apply_model(int64_t _r,string& _s,double _pm,int64_t _ions,int64_t _lspectrum,double& pscore,double& p);
+	bool apply_model(int32_t _r,string& _s,double _pm,int32_t _ions,int32_t _lspectrum,double& pscore,double& p);
 	bool create_line(id& _s, double _pm, double _d, double _ppm, double _score, Document& _js, string& _line);
 	bool create_line_binary(id& _s, double _pm, double _d, double _ppm, double _score, osObject& _js, string& _line);
 	bool create_header_line(string& _h); // generates a TSV formated header line for output
@@ -132,19 +132,19 @@ private:
 	bool dump_lines(string& _ofile,double _tp); // serializes odict lines into a file
 	double low; // lower value for the ppm window calculated in find_window
 	double high; // upper value for the ppm window calculated in find_window
-	map<int64_t,id> sv;
-	map<int64_t,set<int64_t> > sdict;
-	map<int64_t,string> mt;
-	map<int64_t,vector<string> > odict;
-	vector<int64_t> ppms;
+	map<int32_t,id> sv;
+	map<int32_t,set<int32_t> > sdict;
+	map<int32_t,string> mt;
+	map<int32_t,vector<string> > odict;
+	vector<int32_t> ppms;
 	string fragmentation;
-	const int64_t c13 = 1003; //mass difference between the A1 and A0 peaks
-	map<int64_t,vector<double> > distribution;
+	const int32_t c13 = 1003; //mass difference between the A1 and A0 peaks
+	map<int32_t,vector<double> > distribution;
 	//retrieves the ppm column from a formatted output string
-	int64_t get_scan(string& t)	{
+	int32_t get_scan(string& t)	{
 		size_t s = t.find("\t");
 		s = t.find("\t",s+1);
-		return (int64_t)atoi(t.c_str());
+		return (int32_t)atoi(t.c_str());
 	}
 	double get_ppm(string& t)	{
 		size_t s = t.find("\t");

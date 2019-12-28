@@ -22,10 +22,19 @@ using namespace std;
 #include "load_kernel.hpp"
 
 load_kernel::load_kernel()	{
+	const int32_t c13 = 1003; //difference between the A0 and A1 peaks
 	kfile = "";
 	fragment_tolerance = 0;
-	thread = 0;
-	threads = 1;
+	channel ch;
+	ch.delta = 0;
+	ch.lower = 0;
+	channels.push_back(ch);
+	ch.delta = c13;
+	ch.lower = 1000 * 1000;
+	channels.push_back(ch);
+	ch.delta = 2 * 	c13;
+	ch.lower = 1500 * 1000;
+	channels.push_back(ch);
 }
 
 load_kernel::~load_kernel(void)	{
@@ -45,36 +54,33 @@ bool load_kernel::load(void)	{
 	const double ppm = 2.0E-5; //parent tolerance in ppm
 	auto itsp = sp_set.end();
 	auto itppm = sp_set.end();
-	int64_t skipped = 0;
-	int64_t hmatched = 0;
-	int64_t pm = 0;
-	int64_t mv = 0;
-	int64_t mv1 = 0;
-	int64_t u = 0;
-	const int64_t c13 = 1003; //difference between the A0 and A1 peaks
-	int64_t val = 0;
-	int64_t lines = 0;
+	int32_t skipped = 0;
+	int32_t hmatched = 0;
+	int32_t pm = 0;
+	int32_t mv = 0;
+	int32_t u = 0;
+	int32_t val = 0;
+	int32_t lines = 0;
 	bool skip = true;
-	int64_t lower = 0;
-	int64_t delta = 0;
+	int32_t lower = 0;
+	int32_t ppm_delta = 0;
 	kPair pr;
 	const int max_buffer = 1024*16-1;
 	char *buffer = new char[max_buffer+1];
 	char *pPm = NULL;
+	SizeType a = 0;
+	size_t b = 0;
 	//loop through kernel lines
+	const size_t clength = channels.size();
 	while(::fgets(buffer,max_buffer,pFile) != NULL)	{
 		//print keep-alive text for logging
-		if(thread == 0 and lines != 0 and lines % 10000 == 0)	{
+		if(lines != 0 and lines % 10000 == 0)	{
 			cout << '.';
 			cout.flush();
 		}
-		if(thread == 0 and lines != 0 and lines % 200000 == 0)	{
+		if(lines != 0 and lines % 200000 == 0)	{
 			cout << " " << lines << endl;
 			cout.flush();
-		}
-		if(lines % threads != thread)	{
-			lines++;
-			continue;
 		}
 		lines++;
 		// quickly get the pm value without loading the rapidjson::Document
@@ -85,29 +91,24 @@ bool load_kernel::load(void)	{
 		else	{
 			continue;
 		}
-
-		mv = (int64_t)(0.5+(double)pm*pt); //reduced parent mass
-		mv1 = 0;
-		delta = (int64_t)(0.5+(double)pm*ppm); //parent mass tolerance based on ppm
+		ppm_delta = (int32_t)(0.5+(double)pm*ppm); //parent mass tolerance based on ppm
 		//check parent mass for ppm tolerance
-		lower = pm-delta;
-		itppm = sp_set.lower_bound(lower);
 		skip = true;
-		if(itppm != itsp and (*itppm-lower) <= 2*delta)	{
-			skip = false;
+		for(b = 0; b < clength; b++)	{
+			channels[b].mv = (int32_t)(0.5+(double)(pm + channels[b].delta)*pt); //reduced parent mass
+			lower = pm - ppm_delta + channels[b].delta;
+			itppm = sp_set.lower_bound(lower);
+			if(pm > channels[b].lower)	{
+				if(itppm != itsp and (*itppm-lower) <= 2*ppm_delta)	{
+					skip = false;
+					channels[b].dead = false;
+				}
+				else	{
+					channels[b].dead = true;
+				}
+			}
 		}
 		//check A1 mass for ppm tolerance
-		lower = pm+c13-delta;
-		itppm = sp_set.lower_bound(lower);
-		if(itppm != itsp and (*itppm-lower) <= 2*delta)	{
-			if(skip)	{
-				mv = (int64_t)(0.5+(double)(pm+c13)*pt); //reduced parent mass
-			}
-			else	{
-				mv1 = (int64_t)(0.5+(double)(pm+c13)*pt);
-			}
-			skip = false;
-		}
 		if(skip)	{ //bail out if the parent mass doesn't match
 			skipped++;
 			continue;
@@ -122,58 +123,51 @@ bool load_kernel::load(void)	{
 			hmatched++;
 			continue;
 		}
-		u = (int64_t)js["u"].GetInt();  //record the unique kernel id
+		u = (int32_t)js["u"].GetInt();  //record the unique kernel id
 		pmindex[u] = pm;
 		const Value& jbs = js["bs"]; //retrieve reference to the b-type fragments                                                           
-		pr.first = (int64_t)mv; //initialize the parent mass element of the (parent:fragment) pair
-		for(SizeType a = 0; a < jbs.Size();a++)	{
-			val = (int64_t)(0.5+jbs[a].GetDouble()*ft); //reduced fragment mass
+		pr.first = (int32_t)mv; //initialize the parent mass element of the (parent:fragment) pair
+		for(a = 0; a < jbs.Size();a++)	{
+			val = (int32_t)(0.5+jbs[a].GetDouble()*ft); //reduced fragment mass
 			pr.second = val;
-			pr.first = mv;
-			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-				if(mv1 != 0)	{
-					pr.first = mv1;
-					if(spairs.find(pr) == spairs.end())	{
-						continue;
-					}
-				}
-				else	{
+			for(b = 0; b < clength;b++)	{
+				if(channels[b].dead)	{
 					continue;
 				}
+				pr.first = channels[b].mv;
+				if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
+					continue;
+				}
+				pr.first = channels[0].mv;
+				if(kerns.kindex_a[b].find(pr) == kerns.kindex_a[b].end())	{ 
+					kerns.add_pair(pr,b); //create a new vector for the object
+				}
+				kerns.mvindex_a[b].insert(pr.first); //add parent mass to set
+				kerns.kindex_a[b][pr].push_back(u); //add kernel id to vector
 			}
-			if(kerns.kindex.find(pr) == kerns.kindex.end())	{ 
-				kerns.add_pair(pr); //create a new vector for the object
-			}
-			kerns.mvindex.insert(pr.first); //add parent mass to set
-			kerns.kindex[pr].push_back(u); //add kernel id to vector
 		}
 		const Value& jys = js["ys"]; //retrieve reference to the y-type fragments
-		for(SizeType a = 0; a < jys.Size();a++)	{
-			val = (int64_t)(0.5+jys[a].GetDouble()*ft); //reducted fragment mass
+		for(a = 0; a < jys.Size();a++)	{
+			val = (int32_t)(0.5+jys[a].GetDouble()*ft); //reducted fragment mass
 			pr.second = val;
-			pr.first = mv;
-			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-				if(mv1 != 0)	{
-					pr.first = mv1;
-					if(spairs.find(pr) == spairs.end())	{
-						continue;
-					}
-				}
-				else	{
+			for(b = 0; b < clength;b++)	{
+				if(channels[b].dead)	{
 					continue;
 				}
+				pr.first = channels[b].mv;
+				if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
+					continue;
+				}
+				pr.first = channels[0].mv;
+				if(kerns.kindex_a[b].find(pr) == kerns.kindex_a[b].end())	{ 
+					kerns.add_pair(pr,b); //create a new vector for the object
+				}
+				kerns.mvindex_a[b].insert(pr.first); //add parent mass to set
+				kerns.kindex_a[b][pr].push_back(u); //add kernel id to vector
 			}
-			if(kerns.kindex.find(pr) == kerns.kindex.end())	{
-				kerns.add_pair(pr); //create a new vector for the object
-			}
-			kerns.mvindex.insert(pr.first); //add parent mass to set
-			kerns.kindex[pr].push_back(u);//add kernel id to vector
 		}
 	}
-	if(thread == 0)	{
-		cout << "\n";
-		cout.flush();
-	}
+	cout.flush();
 	::fclose(pFile);
 	delete buffer;
 	return true;
@@ -258,34 +252,32 @@ bool load_kernel::load_binary(void)	{
 	const double ppm = 2.0E-5; //parent tolerance in ppm
 	auto itsp = sp_set.end();
 	auto itppm = sp_set.end();
-	int64_t skipped = 0;
-	int64_t hmatched = 0;
-	int64_t pm = 0;
-	int64_t mv = 0;
-	int64_t mv1 = 0;
-	int64_t u = 0;
-	const int64_t c13 = 1003; //difference between the A0 and A1 peaks
-	int64_t val = 0;
-	int64_t lines = 0;
+	int32_t skipped = 0;
+	int32_t hmatched = 0;
+	int32_t pm = 0;
+	int32_t mv = 0;
+	int32_t u = 0;
+	int32_t val = 0;
+	int32_t lines = 0;
 	bool skip = true;
-	int64_t lower = 0;
-	int64_t delta = 0;
+	int32_t lower = 0;
+	int32_t ppm_delta = 0;
 	kPair pr;
 	jsObject js;
 	//loop through kernel lines
+	size_t a = 0;
+	size_t b = 0;
+	//loop through kernel lines
+	const size_t clength = channels.size();
 	while(get_next(pFile,js))	{
 		//print keep-alive text for logging
-		if(thread == 0 and lines != 0 and lines % 10000 == 0)	{
+		if(lines != 0 and lines % 10000 == 0)	{
 			cout << '.';
 			cout.flush();
 		}
-		if(thread == 0 and lines != 0 and lines % 200000 == 0)	{
+		if(lines != 0 and lines % 200000 == 0)	{
 			cout << " " << lines << endl;
 			cout.flush();
-		}
-		if(lines % threads != thread)	{
-			lines++;
-			continue;
 		}
 		lines++;
 		// quickly get the pm value without loading the rapidjson::Document
@@ -293,26 +285,22 @@ bool load_kernel::load_binary(void)	{
 		if(pm == 0)	{
 			continue;
 		}
-		mv = (int64_t)(0.5+(double)pm*pt); //reduced parent mass
-		delta = (int64_t)(0.5+(double)pm*ppm); //parent mass tolerance based on ppm
+		ppm_delta = (int32_t)(0.5+(double)pm*ppm); //parent mass tolerance based on ppm
 		//check parent mass for ppm tolerance
-		lower = pm-delta;
-		itppm = sp_set.lower_bound(lower);
 		skip = true;
-		if(itppm != itsp and (*itppm-lower) <= 2*delta)	{
-			skip = false;
-		}
-		//check A1 mass for ppm tolerance
-		lower = pm+c13-delta;
-		itppm = sp_set.lower_bound(lower);
-		if(pm > 1500000 and itppm != itsp and (*itppm-lower) <= 2*delta)	{
-			if(skip)	{
-				mv = (int64_t)(0.5+(double)(pm+c13)*pt); //reduced parent mass
+		for(b = 0; b < clength; b++)	{
+			channels[b].mv = (int32_t)(0.5+(double)(pm + channels[b].delta)*pt); //reduced parent mass
+			lower = pm - ppm_delta + channels[b].delta;
+			itppm = sp_set.lower_bound(lower);
+			if(pm > channels[b].lower)	{
+				if(itppm != itsp and (*itppm-lower) <= 2*ppm_delta)	{
+					skip = false;
+					channels[b].dead = false;
+				}
+				else	{
+					channels[b].dead = true;
+				}
 			}
-			else	{
-				mv1 = (int64_t)(0.5+(double)(pm+c13)*pt);
-			}
-			skip = false;
 		}
 		if(skip)	{ //bail out if the parent mass doesn't match
 			skipped++;
@@ -325,54 +313,48 @@ bool load_kernel::load_binary(void)	{
 		}
 		u = js.u;  //record the unique kernel id
 		pmindex[u] = pm;
-		pr.first = (int64_t)mv; //initialize the parent mass element of the (parent:fragment) pair
-		for(size_t a = 0; a < js.bs.size();a++)	{
-			val = (int64_t)(0.5+js.bs[a]*ft); //reduced fragment mass
+		pr.first = (int32_t)mv; //initialize the parent mass element of the (parent:fragment) pair
+		for(a = 0; a < js.bs.size();a++)	{
+			val = (int32_t)(0.5+js.bs[a]*ft); //reduced fragment mass
 			pr.second = val;
-			pr.first = mv;
-			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-				if(mv1 != 0)	{
-					pr.first = mv1;
-					if(spairs.find(pr) == spairs.end())	{
-						continue;
-					}
-				}
-				else	{
+			for(b = 0; b < clength;b++)	{
+				if(channels[b].dead)	{
 					continue;
 				}
-			}
-			if(kerns.kindex.find(pr) == kerns.kindex.end())	{ 
-				kerns.add_pair(pr); //create a new vector for the object
-			}
-			kerns.mvindex.insert(pr.first); //add parent mass to set
-			kerns.kindex[pr].push_back(u); //add kernel id to vector
-		}
-		for(size_t a = 0; a < js.ys.size();a++)	{
-			val = (int64_t)(0.5+js.ys[a]*ft); //reducted fragment mass
-			pr.second = val;
-			pr.first = mv;
-			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-				if(mv1 != 0)	{
-					pr.first = mv1;
-					if(spairs.find(pr) == spairs.end())	{
-						continue;
-					}
-				}
-				else	{
+				pr.first = channels[b].mv;
+				if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
 					continue;
 				}
+				pr.first = channels[0].mv;
+				if(kerns.kindex_a[b].find(pr) == kerns.kindex_a[b].end())	{ 
+					kerns.add_pair(pr,b); //create a new vector for the object
+				}
+				kerns.mvindex_a[b].insert(pr.first); //add parent mass to set
+				kerns.kindex_a[b][pr].push_back(u); //add kernel id to vector
 			}
-			if(kerns.kindex.find(pr) == kerns.kindex.end())	{
-				kerns.add_pair(pr); //create a new vector for the object
+		}
+		for(a = 0; a < js.ys.size();a++)	{
+			val = (int32_t)(0.5+js.ys[a]*ft); //reduced fragment mass
+			pr.second = val;
+			for(b = 0; b < clength;b++)	{
+				if(channels[b].dead)	{
+					continue;
+				}
+				pr.first = channels[b].mv;
+				if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
+					continue;
+				}
+				pr.first = channels[0].mv;
+				if(kerns.kindex_a[b].find(pr) == kerns.kindex_a[b].end())	{ 
+					kerns.add_pair(pr,b); //create a new vector for the object
+				}
+				kerns.mvindex_a[b].insert(pr.first); //add parent mass to set
+				kerns.kindex_a[b][pr].push_back(u); //add kernel id to vector
 			}
-			kerns.mvindex.insert(pr.first); //add parent mass to set
-			kerns.kindex[pr].push_back(u);//add kernel id to vector
 		}
 	}
-	if(thread == 0)	{
-		cout << "\n";
-		cout.flush();
-	}
+	cout << "\n";
+	cout.flush();
 	::fclose(pFile);
 	return true;
 }

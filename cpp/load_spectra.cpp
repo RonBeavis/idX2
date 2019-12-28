@@ -31,7 +31,7 @@ load_spectra::~load_spectra(void)	{
 bool load_spectra::load(map<string,string>& _params)	{
 	ifstream istr;
 	istr.open(_params["spectrum file"]); // opens input file stream
-	int64_t res = (int64_t)atoi(_params["fragment tolerance"].c_str());
+	int32_t res = (int32_t)atoi(_params["fragment tolerance"].c_str());
 	if(istr.fail())	{
 		return false;
 	}
@@ -50,8 +50,8 @@ bool load_spectra::load(map<string,string>& _params)	{
 	vector<double> intensities;
 	spectrum sp;
 	const double proton = 1.007276; //constant used to recalculate neutral masses
-	int64_t scan = 0; //scan number of the spectrum
-	int64_t s = 1;
+	int32_t scan = 0; //scan number of the spectrum
+	int32_t s = 1;
 	double rt = 0.0;
 	// process the file, one line at a time
 	while(istr.good() && !istr.eof())	{
@@ -95,8 +95,8 @@ bool load_spectra::load(map<string,string>& _params)	{
 			//carry out calculations and type conversions
 			sp.clear();
 			if(parent*charge > 600.0)	{
-				sp.pm = (int64_t)(0.5 + 1000*(parent*charge - proton*charge));
-				sp.pz = (int64_t)charge;
+				sp.pm = (int32_t)(0.5 + 1000*(parent*charge - proton*charge));
+				sp.pz = (int32_t)charge;
 				sp.pi = 100;
 				sp.pt = pt;
 				sp.desc = desc;
@@ -114,22 +114,15 @@ bool load_spectra::load(map<string,string>& _params)	{
 					sp.sc = scan;
 				}
 				size_t i = 0;
-				pair<int64_t,int64_t> p;
+				pair<int32_t,int32_t> p;
 				while(i < masses.size())	{
-					p.first = (int64_t)(0.5+1000.0*(masses[i]-proton));
-					p.second = (int64_t)(0.5+intensities[i]);
+					p.first = (int32_t)(0.5+1000.0*(masses[i]-proton));
+					p.second = (int32_t)(0.5+intensities[i]);
 					sp.mis.push_back(p);
 					i++;
 				}
 				sp.condition(res,50);
 				spectra.push_back(sp);
-				if(false)	{
-					auto it = sp.mis.begin();
-					while(it != sp.mis.end())	{
-						cout << it->first << "\t" << it->second << endl;
-						it++;
-					}
-				}
 			}
 			//clean up to be ready for the next spectrum
 			desc = "";

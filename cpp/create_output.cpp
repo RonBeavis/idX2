@@ -46,9 +46,9 @@ create_output::~create_output(void)	{
 //used to model a result, based on the parent mass and fragment mass tolerance
 //using the information in the class member map distribution.
 //
-int64_t create_output::get_cells(double _pm,int64_t _res)	{
-	int64_t pm = 100*(int64_t)(_pm/100000);
-	int64_t r = 2;
+int32_t create_output::get_cells(double _pm,int32_t _res)	{
+	int32_t pm = 100*(int32_t)(_pm/100000);
+	int32_t r = 2;
 	if(_res == 50)	{
 		r = 1;
 	}
@@ -56,22 +56,22 @@ int64_t create_output::get_cells(double _pm,int64_t _res)	{
 		r = 0;
 	}
 	if(pm < 800)	{
-		return (int64_t)(pm*distribution[800][r]);
+		return (int32_t)(pm*distribution[800][r]);
 	}
 	if(pm > 4000)	{
-		return (int64_t)(pm*distribution[4000][r]);
+		return (int32_t)(pm*distribution[4000][r]);
 	}
-	return (int64_t)(pm*distribution[pm][r]);
+	return (int32_t)(pm*distribution[pm][r]);
 }
 //
 //generates a probability of random assignment for a particular peptide-to-spectrum match
 //using a version of the hypergeometric distribution customized for the experiment situation
 //
-bool create_output::apply_model(int64_t _res,string& _seq,double _pm,int64_t _ions,int64_t _lspectrum,double& pscore,double& p){
+bool create_output::apply_model(int32_t _res,string& _seq,double _pm,int32_t _ions,int32_t _lspectrum,double& pscore,double& p){
 	p = 0.0001; //initialize output value
 	pscore = 400; //initialize output value
-	int64_t sfactor = 20;
-	int64_t sadjust = 3;
+	int32_t sfactor = 20;
+	int32_t sadjust = 3;
 	if(_res > 100)	{
 		sfactor = 40;
 	}
@@ -81,15 +81,15 @@ bool create_output::apply_model(int64_t _res,string& _seq,double _pm,int64_t _io
 	else if(fragmentation == "cid")	{
 		sfactor = 40;
 	}
-	int64_t cells = get_cells(_pm,_res);
-	int64_t total_ions = 2*(int64_t)(_seq.size() - 1);
+	int32_t cells = get_cells(_pm,_res);
+	int32_t total_ions = 2*(int32_t)(_seq.size() - 1);
 	if(total_ions > sfactor)	{
 		total_ions = sfactor;
 	}
 	if(total_ions < _ions)	{
 		total_ions = _ions + 1;
 	}
-	int64_t sc = _lspectrum * sadjust;
+	int32_t sc = _lspectrum * sadjust;
 	if(_ions >= sc)	{
 		sc = _ions + 2;
 	}
@@ -126,16 +126,16 @@ bool create_output::load_mods(void)	{
 //is determined.
 //
 bool create_output::find_window(void)	{
-	map<int64_t,int64_t> vs;
-	int64_t i = 0;
+	map<int32_t,int32_t> vs;
+	int32_t i = 0;
 	for(i = -21; i < 22; i++)	{
 		vs[i] = 0;
 	}
 	auto it = ppms.begin();
-	int64_t max = -22;
-	int64_t center = -1;
+	int32_t max = -22;
+	int32_t center = -1;
 	while(it != ppms.end())	{
-		i = (int64_t)(0.5 + *it);
+		i = (int32_t)(0.5 + *it);
 		if(i >= -21 and i <= 21)	{
 			vs[i] += 1;
 		}
@@ -146,7 +146,7 @@ bool create_output::find_window(void)	{
 		it++;
 	}
 //	cout << endl << max << endl;
-//	for(int64_t j = -20; j <= 20; j++)	{
+//	for(int32_t j = -20; j <= 20; j++)	{
 //		cout << j << "\t" << vs[j] << endl;
 //	}
 	double ic = (double)max;
@@ -155,14 +155,14 @@ bool create_output::find_window(void)	{
 		high = 20.0;
 		return true;
 	}
-	int64_t l = -20;
+	int32_t l = -20;
 	for(i = center;i >= -20 ; i--)	{
 		if(vs[i]/ic < 0.01 and vs[i-1]/ic < 0.01)	{
 			l = i;
 			break;
 		}
 	}
-	int64_t h = 20;
+	int32_t h = 20;
 	for(i = center; i <= 20 ; i++)	{
 		if(vs[i]/ic < 0.01 and vs[i+1]/ic < 0.01)	{
 			h = i;
@@ -202,7 +202,7 @@ bool create_output::create_line(id& _s,double _pm,double _d,double _ppm,double _
 	oline << _js["post"].GetString() << "\t"; // residue C-terminal to kernel
 	oline << _s.peaks << "\t"; // # of identified spectrum signals
 	const Value& jbs = _js["ns"];
-	int64_t lns = 0;
+	int32_t lns = 0;
 	for(SizeType a = 0; a < jbs.Size();a++)	{ // sum potentials z for the kernel
 		lns += jbs[a].GetInt();
 	}
@@ -274,7 +274,7 @@ bool create_output::create_line_binary(id& _s,double _pm,double _d,double _ppm,d
 	oline << _js.seq << "\t"; // kernel sequence
 	oline << _js.post << "\t"; // residue C-terminal to kernel
 	oline << _s.peaks << "\t"; // # of identified spectrum signals
-	int64_t lns = 0;
+	int32_t lns = 0;
 	for(size_t i = 0; i < _js.ns.size();i++)	{
 		lns += _js.ns[i];
 	}
@@ -430,7 +430,7 @@ bool create_output::get_next(FILE *_pFile,osObject& _js)
 //
 //creates an output file, as specified in _params for a JSON binary kernel
 //
-bool create_output::create_binary(map<string,string>& _params,create_results& _cr, map<int64_t, set<int64_t> >& _hu)	{
+bool create_output::create_binary(map<string,string>& _params,create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
 	FILE *pFile = ::fopen(_params["kernel file"].c_str(),"rb");
 	if(pFile == NULL)	{
 		return false;
@@ -438,7 +438,7 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 	if(!load_mods())	{ //warns if "reports_mods.txt" is not present
 		cout << "Warning (idx:1001): annotation file \"report_mods.txt\" was not present" << endl;
 	}
-	int64_t k = 0;
+	int32_t k = 0;
 	//loops through ids and creates some structures to facilitate generating report lines
 	for(size_t j = 0; j < _cr.ids.size(); j++)	{
 		sv[_cr.ids[j].sn] = _cr.ids[j];
@@ -448,13 +448,13 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 				sdict[k].insert(_cr.ids[j].sn);
 			}
 			else	{
-				sdict.insert(pair<int64_t,set<int64_t> >(k,set<int64_t>()));
+				sdict.insert(pair<int32_t,set<int32_t> >(k,set<int32_t>()));
 				sdict[k].insert(_cr.ids[j].sn);
 			}
 		}
 	}
 	auto itsd = sdict.begin();
-	set<int64_t> hu_set;
+	set<int32_t> hu_set;
 	while(itsd != sdict.end())	{
 		if(_hu.find(itsd->first) != _hu.end())	{
 			hu_set.insert(_hu[itsd->first].begin(),_hu[itsd->first].end());
@@ -462,15 +462,15 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 		itsd++;
 	}
 	//initialize variables
-	int64_t res = atoi(_params["fragment tolerance"].c_str());
-	int64_t inferred = 0;
-	int64_t specs = atoi(_params["spectra"].c_str());
+	int32_t res = atoi(_params["fragment tolerance"].c_str());
+	int32_t inferred = 0;
+	int32_t specs = atoi(_params["spectra"].c_str());
 	double score_min = 200.0;
 	if(specs > 0)	{
 		score_min += 100.0 * log(specs)/2.3;
 	}
 	double total_prob = 0.0; //sum of all assigned probabilities
-	int64_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match
+	int32_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match
 	//updated min_c value based on instrument resolution
 	if(res == 50)	{
 		min_c = 7;
@@ -479,8 +479,8 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 		min_c = 6;
 	}
 	string line; //will contain a JSON Lines JSON object
-	int64_t c = 0; //lines read counter
-	int64_t h = 0; //for checking peptide homology
+	int32_t c = 0; //lines read counter
+	int32_t h = 0; //for checking peptide homology
 	//loop through the JSON Lines entries in the kernel file to find
 	//the information about individual ids
 	osObject js;
@@ -501,11 +501,11 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 		if(js.pm == 0)	{ //bail out if the JSON object does not have a parent mass
 			continue;
 		}
-		h = (int64_t)js.h;
+		h = (int32_t)js.h;
 		if(sdict.find(h) == sdict.end())	{ //bail out if the kernel was not identified
 			continue;
 		}
-		if(h != (int64_t)js.u)	{ //track # of peptide alternate solutions
+		if(h != (int32_t)js.u)	{ //track # of peptide alternate solutions
 			inferred += 1;
 		}
 		//initialize variables
@@ -516,7 +516,7 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 		double ppm = -10000000.0; //delta in ppm
 		double score = 0.0; //score for a spectrum-to-kernel assignment
 		auto it = sdict[h].begin(); //iterator for sdict vectors
-		int64_t s = 0; //spectrum index
+		int32_t s = 0; //spectrum index
 		string seq; //kernel peptide sequence
 		//iterate through the spectra corresponding the index value h
 		while(it != sdict[h].end())	{
@@ -528,8 +528,14 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 			// convert to parts-per-million
 			ppm = 1.0e6*(sv[s].pm-pm)/pm;
 			// deal with A1 peaks
-			if(delta > 0.5)	{
+			if(delta > 0.5 and delta < 1.5)	{
 				ppm = 1.0e6*(sv[s].pm-c13-pm)/pm;
+			}
+			else if(delta > 1.5)	{
+				ppm = 1.0e6*(sv[s].pm-2*c13-pm)/pm;
+			}
+			if(fabs(ppm) > 20.0)	{
+				continue;
 			}
 			seq = js.seq;
 			// apply math model to result to obtain a probability of stochastic assignment
@@ -549,11 +555,11 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 				odict[s].push_back(new_line);			
 			}
 			else	{
-				odict.insert(pair<int64_t,vector<string> >(s,vector<string>()));
+				odict.insert(pair<int32_t,vector<string> >(s,vector<string>()));
 				odict[s].push_back(new_line);
 			}
 			//add ppm value to ppms histogram
-			ppms.push_back((int64_t)(0.5+ppm));
+			ppms.push_back((int32_t)(0.5+ppm));
 		}
 		total_prob += max_prob;
 	}
@@ -576,23 +582,23 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	ofs << header << endl;
 	//determine parent mass delta ppm acceptance window
 	find_window();
-	int64_t err = 0;
-	int64_t sub = 0;
-	int64_t tot = 0;
+	int32_t err = 0;
+	int32_t sub = 0;
+	int32_t tot = 0;
 	string t;
 	//loop through result lines and record the information
-	int64_t low_t = (int64_t)(0.5 + low);
-	int64_t high_t = (int64_t)(0.5 + high);
-	int64_t ps_t = 0;
-	int64_t scan = 0;
-	multimap<int64_t,string> ostrings;
-	pair<int64_t,string> opair;
+	int32_t low_t = (int32_t)(0.5 + low);
+	int32_t high_t = (int32_t)(0.5 + high);
+	int32_t ps_t = 0;
+	int32_t scan = 0;
+	multimap<int32_t,string> ostrings;
+	pair<int32_t,string> opair;
 	char *pString =  new char[1024*8];
-	for(int64_t a = 0; a < (int64_t)odict.size(); a++)	{
+	for(int32_t a = 0; a < (int32_t)odict.size(); a++)	{
 		sub = 1;
 		for(size_t b = 0; b < odict[a].size(); b++)	{
 			t = odict[a][b];
-			ps_t = (int64_t)(0.5+get_ppm(t));
+			ps_t = (int32_t)(0.5+get_ppm(t));
 			sprintf(pString,"%li\t%li\t%s",(long)a,(long)sub,t.c_str());
 			header = pString;
 			scan = get_scan(t);
@@ -639,7 +645,7 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 //
 //creates an output file, as specified in _params for a JSON kernel
 //
-bool create_output::create(map<string,string>& _params,create_results& _cr, map<int64_t, set<int64_t> >& _hu)	{
+bool create_output::create(map<string,string>& _params,create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
 	FILE *pFile = ::fopen(_params["kernel file"].c_str(),"r");
 	if(pFile == NULL)	{
 		return false;
@@ -647,7 +653,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	if(!load_mods())	{ //warns if "reports_mods.txt" is not present
 		cout << "Warning (idx:1001): annotation file \"report_mods.txt\" was not present" << endl;
 	}
-	int64_t k = 0;
+	int32_t k = 0;
 	//loops through ids and creates some structures to facilitate generating report lines
 	for(size_t j = 0; j < _cr.ids.size(); j++)	{
 		sv[_cr.ids[j].sn] = _cr.ids[j];
@@ -657,13 +663,13 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 				sdict[k].insert(_cr.ids[j].sn);
 			}
 			else	{
-				sdict.insert(pair<int64_t,set<int64_t> >(k,set<int64_t>()));
+				sdict.insert(pair<int32_t,set<int32_t> >(k,set<int32_t>()));
 				sdict[k].insert(_cr.ids[j].sn);
 			}
 		}
 	}
 	auto itsd = sdict.begin();
-	set<int64_t> hu_set;
+	set<int32_t> hu_set;
 	while(itsd != sdict.end())	{
 		if(_hu.find(itsd->first) != _hu.end())	{
 			hu_set.insert(_hu[itsd->first].begin(),_hu[itsd->first].end());
@@ -671,15 +677,15 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 		itsd++;
 	}
 	//initialize variables
-	int64_t res = atoi(_params["fragment tolerance"].c_str());
-	int64_t inferred = 0;
-	int64_t specs = atoi(_params["spectra"].c_str());
+	int32_t res = atoi(_params["fragment tolerance"].c_str());
+	int32_t inferred = 0;
+	int32_t specs = atoi(_params["spectra"].c_str());
 	double score_min = 200.0;
 	if(specs > 0)	{
 		score_min += 100.0 * log(specs)/2.3;
 	}
 	double total_prob = 0.0; //sum of all assigned probabilities
-	int64_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match
+	int32_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match
 	//updated min_c value based on instrument resolution
 	if(res == 50)	{
 		min_c = 7;
@@ -688,8 +694,8 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 		min_c = 6;
 	}
 	string line; //will contain a JSON Lines JSON object
-	int64_t c = 0; //lines read counter
-	int64_t h = 0; //for checking peptide homology
+	int32_t c = 0; //lines read counter
+	int32_t h = 0; //for checking peptide homology
 	//loop through the JSON Lines entries in the kernel file to find
 	//the information about individual ids
 	const int max_buffer = 1024*16-1;
@@ -713,11 +719,11 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 		if(!js.HasMember("pm"))	{ //bail out if the JSON object does not have a parent mass
 			continue;
 		}
-		h = (int64_t)js["h"].GetInt();
+		h = (int32_t)js["h"].GetInt();
 		if(sdict.find(h) == sdict.end())	{ //bail out if the kernel was not identified
 			continue;
 		}
-		if(h != (int64_t)js["u"].GetInt())	{ //track # of peptide alternate solutions
+		if(h != (int32_t)js["u"].GetInt())	{ //track # of peptide alternate solutions
 			inferred += 1;
 		}
 		//initialize variables
@@ -728,7 +734,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 		double ppm = -10000000.0; //delta in ppm
 		double score = 0.0; //score for a spectrum-to-kernel assignment
 		auto it = sdict[h].begin(); //iterator for sdict vectors
-		int64_t s = 0; //spectrum index
+		int32_t s = 0; //spectrum index
 		string seq; //kernel peptide sequence
 		//iterate through the spectra corresponding the index value h
 		while(it != sdict[h].end())	{
@@ -767,11 +773,11 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 				odict[s].push_back(new_line);			
 			}
 			else	{
-				odict.insert(pair<int64_t,vector<string> >(s,vector<string>()));
+				odict.insert(pair<int32_t,vector<string> >(s,vector<string>()));
 				odict[s].push_back(new_line);
 			}
 			//add ppm value to ppms histogram
-			ppms.push_back((int64_t)(0.5+ppm));
+			ppms.push_back((int32_t)(0.5+ppm));
 		}
 		total_prob += max_prob;
 	}

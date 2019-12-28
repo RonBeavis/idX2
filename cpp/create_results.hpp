@@ -23,15 +23,15 @@ public:
 		rt = 0.0;
 	}
 	virtual ~id(void)	{}
-	int64_t sn; //scan number
-	int64_t peaks; //number of fragment ions identified
-	vector<int64_t> ks; //vector of kernel unique identifiers
+	int32_t sn; //scan number
+	int32_t peaks; //number of fragment ions identified
+	vector<int32_t> ks; //vector of kernel unique identifiers
 	double ri; //fraction of ion intensity identified
 	double rt;
-	int64_t pm; //parent ion mass
-	int64_t pz; //parent ion charge
-	int64_t sc; //scan number
-	int64_t ions; //number of fragment ions in the spectrum
+	int32_t pm; //parent ion mass
+	int32_t pz; //parent ion charge
+	int32_t sc; //scan number
+	int32_t ions; //number of fragment ions in the spectrum
 	id& operator=(const id &rhs)	{
 		sn = rhs.sn;
 		peaks = rhs.peaks;
@@ -59,7 +59,7 @@ public:
 	bool create(map<string,string>& _p,
 			load_spectra& _l,
 			load_kernel& _k);
-	int64_t size(void) { return (int64_t)ids.size(); }
+	int32_t size(void) { return (int32_t)ids.size(); }
 	
 	vector<id> ids; //identification information
 };

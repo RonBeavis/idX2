@@ -55,16 +55,16 @@ a spectrum-to-peptide match.
 
 /*
 C++ STL elements are used throughout the code.
-The 8-byte variable types "int64_t" and "double" are used as much as possible.
+The 8-byte variable types "int32_t" and "double" are used as much as possible.
 "size_t" is used when necessary for STL compatibility.
 */
 
 /*
-As mentioned above, all masses used are in millidaltons, represented as "int64_t" 
+As mentioned above, all masses used are in millidaltons, represented as "int32_t" 
 variables. When floating point masses are converted to integers, the following method is used:
 
 	double dm = 1234.546789; //floating point mass in daltons
-	int64_t im = (int64_t)(0.5+dm*1000.0); //integer mass in millidaltons
+	int32_t im = (int32_t)(0.5+dm*1000.0); //integer mass in millidaltons
 
 */
 
@@ -90,10 +90,6 @@ using namespace std::chrono; //namespace only used in this file
 #ifdef MSVC
 	#define _TIMESPEC_DEFINED
 #endif
-#include <pthread.h>
-
-void* KernelThread(void *pParam);
-void* KernelThreadBinary(void* pParam);
 
 //
 //	Simple method to serve as a cross-platform check for the existence of a file
@@ -106,7 +102,7 @@ inline bool exists (const std::string& name) {
 int load_params(map<string,string>& params,int argc,char* argv[])	{
 	params["version"] = "idX, 2020.1 (mt)";
 	params["fragmentation"] = "";
-	int64_t fragment_tolerance = 400; // default fragment mass tolerance
+	int32_t fragment_tolerance = 400; // default fragment mass tolerance
 	try	{
 		if(argc > 4 and strcmp(argv[4],"high") == 0)	{
 			fragment_tolerance = 20;
@@ -147,7 +143,7 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 	string output_file = argv[3]; //file that will contain the identifications in TSV format
 	params["output file"] = output_file;
 
-	int64_t maximum_spectra = -1; //if not -1, determines the number of spectra to consider
+	int32_t maximum_spectra = -1; //if not -1, determines the number of spectra to consider
 	try	{
 		if(argc > 5)	{
 			maximum_spectra = atoi(argv[5]);
@@ -161,7 +157,7 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 		cout << "Error (idx:0022): exception thrown trying to assign maximum spectra" << endl;
 		return 1;
 	}
-	int64_t parent_tolerance = 20; //parent ion mass tolerance is fixed at 20 mDa
+	int32_t parent_tolerance = 20; //parent ion mass tolerance is fixed at 20 mDa
 	try	{
 		strStream.clear();
 		strStream.str("");
@@ -189,7 +185,7 @@ int main(int argc, char* argv[])	{
 	if(ret != 0)	{
 		return ret;
 	}
-	int64_t maximum_spectra = atol(params["maximum spectra"].c_str()); //if not -1, determines the number of spectra to consider
+	int32_t maximum_spectra = atol(params["maximum spectra"].c_str()); //if not -1, determines the number of spectra to consider
 	cout << "\nstart ...\nidX parameters" << "\n"; //output the interpreted command line values for logging
 	if(maximum_spectra != -1)	{
 		cout << "\t   max spectra: " << maximum_spectra << endl;
@@ -234,55 +230,29 @@ int main(int argc, char* argv[])	{
 	cout << endl << "load & index kernel"  << endl;
 	cout.flush();
 
-	long max_threads = 2;
-	load_kernel **pKernels = new load_kernel*[max_threads];
-	int *pId = new int[max_threads];
-	int *pHandle = new int[max_threads];
-	pthread_t *pThreads = new pthread_t[max_threads];
-	for(int a = 0; a < max_threads; a++)	{
-		pKernels[a] = (load_kernel *)NULL;
-		pHandle[a] = 0;
-		pId[a] = 0;
-	}
 	string strK = params["kernel file"];
 	bool isB = false;
 	if (strK.find(".b") == strK.size()-2) {
 		cout.flush();
 		isB = true;
 	}
-	for(int a = 0; a < max_threads; a++)	{
-		pKernels[a] = new load_kernel();
-		pKernels[a]->kfile = strK; //initialize lk variable
-		pKernels[a]->fragment_tolerance = (double)atof(params["fragment tolerance"].c_str()); //initialize lk variable
-		pKernels[a]->thread = a;
-		pKernels[a]->threads = max_threads;
-		pKernels[a]->spectrum_pairs(ls);
+	load_kernel lk_main;
+	lk_main.kfile = strK; //initialize lk variable
+	lk_main.fragment_tolerance = (double)atof(params["fragment tolerance"].c_str()); //initialize lk variable
+	lk_main.spectrum_pairs(ls);
+	try	{
 		if (isB) {
-			pthread_create(&pThreads[a], NULL, KernelThreadBinary, (void*)pKernels[a]);
+			lk_main.load_binary();
 		}
 		else {
-			pthread_create(&pThreads[a], NULL, KernelThread, (void*)pKernels[a]);
+			lk_main.load();
 		}
+	}
+	catch (...)	{
+		cout << "Error (idx:0028): failed to load kernels" << endl;
+		return 1;
 	}
 
-	void *vp = (void *)NULL;
-	int wait = 0;
-	for(int a = 0;a < max_threads; a++){
-		wait = pthread_join(pThreads[a],&vp);
-		if(wait != 0)	{
-			cout << "Error (idx:1000): thread #" << a 
-					<< " returned with an error" << endl;
-		}
-	}
-	load_kernel lk_main;
-	for(int a = 0;a < max_threads; a++){
-		lk_main += *(pKernels[a]);
-		delete pKernels[a];
-	}
-	delete pKernels;
-	delete pId;
-	delete pThreads;
-	delete pHandle;
 	t2 = high_resolution_clock::now(); //end timing kernel loading and report
 	cout << endl << "  kernel pairs = " << lk_main.kerns.size() << endl;
 	cout << "  kernels &Delta;T = "  << fixed << setprecision(3) 
@@ -336,12 +306,4 @@ int main(int argc, char* argv[])	{
 	return 0;
 }
 
-void* KernelThread(void *_p){
-	((load_kernel *)_p)->load();
- 	return (void*)0;
-}
 
-void* KernelThreadBinary(void* _p) {
-	((load_kernel*)_p)->load_binary();
-	return (void*)0;
-}

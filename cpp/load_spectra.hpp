@@ -15,21 +15,21 @@ correspond to neutral molecules and are recorded in millidaltons.
 #include <algorithm>
 #include <cmath>
 
-typedef std::pair <int64_t,int64_t> sPair; //type used to record (parent,fragment) pairs
+typedef std::pair <int32_t,int32_t> sPair; //type used to record (parent,fragment) pairs
 
 class spectrum
 {
 public:
 	spectrum(void)	{pm = 0;pi=0;pz=0;sc=0;pt=0.0;rt=0.0;}
 	virtual ~spectrum(void)	{ clear(); }
-	int64_t pm; //parent mass
-	int64_t pi; //parent intensity
-	int64_t pz; //parent charge
-	int64_t sc; //scan number
+	int32_t pm; //parent mass
+	int32_t pi; //parent intensity
+	int32_t pz; //parent charge
+	int32_t sc; //scan number
 	double rt; //run time
-	int64_t isum; //sum of fragment intensities
+	int32_t isum; //sum of fragment intensities
 	double pt; //parent mass tolerance
-	vector<pair<int64_t,int64_t>> mis; //fragment mass/intensity pairs
+	vector<pair<int32_t,int32_t>> mis; //fragment mass/intensity pairs
 	phmap::flat_hash_set<sPair> spairs; //index of (parent,fragment) masses 
 	string desc;//description of spectrum
 	bool clear()	{sc = 0;pm = 0; pi = 0; pz = 0; sc=0; desc = ""; mis.clear();spairs.clear();return true;}
@@ -42,7 +42,7 @@ public:
 		rt = rhs.rt;
 		desc = rhs.desc;
 		sc = rhs.sc;
-		pair<int64_t,int64_t> p;
+		pair<int32_t,int32_t> p;
 		for(size_t i = 0; i < rhs.mis.size(); i++)	{
 			p.first = rhs.mis[i].first;
 			p.second = rhs.mis[i].second;
@@ -55,11 +55,11 @@ public:
 	//condition() converts the information in the MGF file into the data types and indexes
 	//used by idX. _ires is the fragment ion mass tolerance and _l is the maximum number
 	//of fragment ions that may be considered.
-	bool condition(int64_t _ires, int64_t _l)	{
+	bool condition(int32_t _ires, int32_t _l)	{
 		double i_max = 0.0;
 		const double res = 1.0/(double)_ires;
-		int64_t m = 0;
-		int64_t i = 0;
+		int32_t m = 0;
+		int32_t i = 0;
 		//make sure the fragment ions are sorted by mass
 		sort(mis.begin(), mis.end(), 
                		[](const auto& x, const auto& y) { return x.first < y.first; } );
@@ -67,15 +67,15 @@ public:
 		for(size_t a = 0; a < mis.size(); a++)	{
 			m = mis[a].first;
 			i = mis[a].second;		
-			if(m < 150000 or (int64_t)fabs(pm-m) < 45000 or (int64_t)fabs(pm/pz- m) < 2000)	{
+			if(m < 150000 or (int32_t)fabs(pm-m) < 45000 or (int32_t)fabs(pm/pz- m) < 2000)	{
 				continue;
 			}
 			if(i > i_max)	{
 				i_max = (double)i;
 			}
 		}
-		vector<int64_t> sMs;
-		vector<int64_t> sIs;
+		vector<int32_t> sMs;
+		vector<int32_t> sIs;
 		i_max = i_max/100.0;
 		//clean out fragments that are too small, too close to the parent mass 
 		//or have intensities < 1% of the maximum
@@ -107,8 +107,8 @@ public:
 			}
 		}
 		//make a temporary vector of mass,intensity paris
-		vector<pair<int64_t,int64_t> > pMs;
-		pair<int64_t,int64_t> p(0,0);
+		vector<pair<int32_t,int32_t> > pMs;
+		pair<int32_t,int32_t> p(0,0);
 		for(size_t a = 0; a < sMs.size();a++)	{
 			p.first = sMs[a];
 			p.second = sIs[a];
@@ -121,7 +121,7 @@ public:
 							if(x.second == y.second) return x.first > y.first;
 							return false;} );
 		//estimate the maximum number of relevant ions
-		int64_t max_l = 2 * (int64_t)((0.5 + (double)pm)/100000.0);
+		int32_t max_l = 2 * (int32_t)((0.5 + (double)pm)/100000.0);
 		if(max_l > _l)	{
 			max_l = _l;
 		}
@@ -136,45 +136,49 @@ public:
 //
 //		generate a normalized set of spectrum masses
 //
-		int64_t is = 0;
+		int32_t is = 0;
 		mis.clear();
-		sPair pr;
+		sPair spr;
 		const double ptd = 1.0/70.0; 
-		pr.first = (int64_t)(0.5+(double)pm*ptd); //calculate the reduced value used for indexing the parent ion mass
+		spr.first = (int32_t)(0.5+(double)pm*ptd); //calculate the reduced value used for indexing the parent ion mass
 		//create a new vector of fragment ion mass,intensity pairs using
 		//the reduced value corresponding to the fragment ion mass tolerance.
 		//3 values are recorded, to compensate for errors introduced
 		//by the fragment mass reduction rounding process.
 		for(size_t a=0; a < pMs.size();a++)	{
 			m = pMs[a].first;
-			p.first = (int64_t)(0.5+(double)m*res);
-			pr.second = p.first;
-			spairs.insert(pr);
-			pr.first += 1;
-			spairs.insert(pr);
-			pr.first -= 2;
-			spairs.insert(pr);
-			pr.first += 1;
+
+			p.first = (int32_t)(0.5+(double)m*res);
+			spr.second = p.first;
+			spairs.insert(spr);
+			spr.first += 1;
+			spairs.insert(spr);
+			spr.first -= 2;
+			spairs.insert(spr);
+			spr.first += 1;
 			p.second = pMs[a].second;
 			mis.push_back(p);
+
 			p.first -= 1;
-			pr.second = p.first;
-			spairs.insert(pr);
-			pr.first += 1;
-			spairs.insert(pr);
-			pr.first -= 2;
-			spairs.insert(pr);
-			pr.first += 1;
+			spr.second = p.first;
+			spairs.insert(spr);
+			spr.first += 1;
+			spairs.insert(spr);
+			spr.first -= 2;
+			spairs.insert(spr);
+			spr.first += 1;
 			mis.push_back(p);
+
 			p.first += 2;
-			pr.second = p.first;
-			spairs.insert(pr);
-			pr.first += 1;
-			spairs.insert(pr);
-			pr.first -= 2;
-			spairs.insert(pr);
-			pr.first += 1;
+			spr.second = p.first;
+			spairs.insert(spr);
+			spr.first += 1;
+			spairs.insert(spr);
+			spr.first -= 2;
+			spairs.insert(spr);
+			spr.first += 1;
 			mis.push_back(p);
+
 			is += 3*p.second;
 		}
 /*		if(sc == 3485)	{
@@ -202,7 +206,7 @@ public:
 //	enforces the maximum number of spectra to use by truncating
 //	the spectra vector
 //
-	void set_max(const int64_t _max)	{
+	void set_max(const int32_t _max)	{
 		if(spectra.size() <= (size_t)_max)	{
 			return;
 		}
