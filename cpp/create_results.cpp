@@ -35,15 +35,13 @@ bool create_results::create(map<string, string>& _p, //parameters
 		load_spectra& _l, //spectrum informaiton
 		load_kernel& _k) { //kernel information
 	int32_t z = 1; //serial number for PSM: used if spectrum::sc is not available
-	double pt = 1.0 / 70.0;
+	const double pt = 1.0/70.0;
 	vector<int32_t> dvals{ -1,0,1 }; //values to compensate for integer rounding effects
 //	vector<int32_t> dvals{ 0 }; //values to compensate for integer rounding effects
 	//initialize variables for the identification process
 	int32_t d = 0;
 	int32_t m = 0;
 	int32_t m2 = 0;
-	double rm = 0.0;
-	int32_t pm = 0;
 	int32_t pz = 0;
 	int32_t idi = 0;
 	int32_t cpm = 0;
@@ -58,6 +56,7 @@ bool create_results::create(map<string, string>& _p, //parameters
 	size_t a = 0;
 	size_t n = 0;
 	size_t b = 0;
+	int32_t mi = 0;
 	//loop through spectra
 	for (size_t s = 0; s < _l.spectra.size(); s++) {
 		//output keep-alive text for logging
@@ -71,16 +70,15 @@ bool create_results::create(map<string, string>& _p, //parameters
 		}
 		ident.clear(); //initialize the temporary identification vector
 		ims.clear(); //initialize the temporary mass vector
-		rm = (double)_l.spectra[s].pm; //parent mass
-		pm = (int32_t)(0.5 + rm * pt); //reduced parent mass
+		mi = _l.spectra[s].pm;
 		pz = (int32_t)_l.spectra[s].pz; //parent charge
 		idx.clear(); //initialize temporary list of kernel identifiers
 		idi = 0;
-		use2 = (pm > 1500000 and pz == 2); //check if parent mass large enough to consider z=2 fragments
+		use2 = (mi > 1500000 and pz == 2); //check if parent mass large enough to consider z=2 fragments
 		use3 = (pz > 2); //check if charge large enough to consider z=2 fragments
 		for(a = 0; a < clength; a++)	{
-			if(rm > _k.channels[a].lower)	{
-				_k.channels[a].mv = rm - _k.channels[a].delta; //add the parent mass
+			if(mi > _k.channels[a].lower)	{
+				_k.channels[a].mv = mi - _k.channels[a].delta; //add the parent mass
 				_k.channels[a].dead = false;
 			}
 			else	{
@@ -92,8 +90,7 @@ bool create_results::create(map<string, string>& _p, //parameters
 			if(_k.channels[a].dead)	{
 				continue;
 			}
-			rm = _k.channels[a].mv;
-			cpm = (int32_t)(0.5 + rm * pt); //current reduced parent mass
+			cpm = (int32_t)(0.5 + (double)_k.channels[a].mv * pt); //current reduced parent mass
 			//loop through possible parent mass values to compensate for round errors
 			for (n = 0; n < dvals.size(); n++) {
 				d = dvals[n];

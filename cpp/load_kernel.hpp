@@ -74,11 +74,11 @@ public:
 	void add_pair(kPair _v,size_t _a) {kindex_a[_a][_v] = vector<int32_t>();} //addes a new vector to kindex
 	size_t clength;
 	int32_t size(void)	{
-		int32_t sz = 0;
+		size_t sz = 0;
 		for(size_t a = 0; a < clength; a++)	{
 			sz += kindex_a[a].size();
 		}
-		return sz;
+		return (int32_t)sz;
 	} // returns the size of kindex
 	void clear(void) {
 		for(size_t a = 0; a < clength; a++)	{
