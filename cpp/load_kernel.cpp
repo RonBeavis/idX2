@@ -74,11 +74,11 @@ bool load_kernel::load(void)	{
 	const size_t clength = channels.size();
 	while(::fgets(buffer,max_buffer,pFile) != NULL)	{
 		//print keep-alive text for logging
-		if(lines != 0 and lines % 10000 == 0)	{
+		if(lines != 0 and lines % 5000 == 0)	{
 			cout << '.';
 			cout.flush();
 		}
-		if(lines != 0 and lines % 200000 == 0)	{
+		if(lines != 0 and lines % 100000 == 0)	{
 			cout << " " << lines << endl;
 			cout.flush();
 		}

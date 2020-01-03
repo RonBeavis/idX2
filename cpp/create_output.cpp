@@ -589,8 +589,8 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	int32_t tot = 0;
 	string t;
 	//loop through result lines and record the information
-	int32_t low_t = (int32_t)(0.5 + low);
-	int32_t high_t = (int32_t)(0.5 + high);
+	int32_t low_t = (int32_t)(0.5 + low) - 1;
+	int32_t high_t = (int32_t)(0.5 + high) + 1;
 	int32_t ps_t = 0;
 	int32_t scan = 0;
 	multimap<int32_t,string> ostrings;
@@ -631,16 +631,16 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	if(_tp > 0)	{
 		cout << "     fpr = " << scientific << setprecision(1) << _tp << endl;
 	}
-	if(low != -20.0 and high != 20.0)	{
-		double ble = (20.0 - high) + (low + 20.0) + 2;
+	if(high_t - low_t < 35)	{
+		double ble = (20.0 - (high_t + 1)) + (low_t - 1 + 20.0) + 2;
 		ble = err/ble;
-		ble = 100.0*(ble*(high - low - 1)/tot);
+		ble = 100.0*(ble*(high_t - low_t)/tot);
 		cout << "     baseline error = " << fixed << setprecision(1) << ble << "% (" << err << ")" << endl;
 	}
 	else	{
 		cout << "     baseline error = n/a" << endl;
 	}
-	cout << "     parent ion tolerance = " << fixed << setprecision(0) << low+1.0 << "," << high-1.0 << endl;
+	cout << "     parent ion tolerance = " << fixed << setprecision(0) << low_t-1 << "," << high_t << endl;
 	return true;
 }
 
