@@ -12,7 +12,7 @@ CXX = g++-9.1
 #uncomment this line if you are using gcc 4.x
 #CXXFLAGS = -O3 -fopenmp -D_GLIBCXX_PARALLEL -march=native
 #CXXFLAGS = -fprofile-generate
-CXXFLAGS = -std=c++17 -O2 -I$(INC_PATH) -pthread -w
+CXXFLAGS = -std=c++17 -O2 -I$(INC_PATH) -pthread -w -Wno-psabi
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
