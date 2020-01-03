@@ -7,4 +7,4 @@ VC++ 2019 (v.142) on Windows 10
 LLVM (clang-cl for v.142) on Windows 10
 
 Makefile: tested on Ubuntu
-Makefile_rp: tested on Raspbian (warning: compilation throws "notes").
+Makefile_rp: tested on Raspbian.
