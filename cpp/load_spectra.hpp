@@ -28,6 +28,7 @@ public:
 	int32_t sc; //scan number
 	double rt; //run time
 	int32_t isum; //sum of fragment intensities
+	int32_t pks; //number of peaks
 	double pt; //parent mass tolerance
 	vector<pair<int32_t,int32_t>> mis; //fragment mass/intensity pairs
 	phmap::flat_hash_set<sPair> spairs; //index of (parent,fragment) masses 
@@ -40,8 +41,10 @@ public:
 		pz = rhs.pz;
 		pt = rhs.pt;
 		rt = rhs.rt;
+		pks = rhs.pks;
 		desc = rhs.desc;
 		sc = rhs.sc;
+		isum = rhs.isum;
 		pair<int32_t,int32_t> p;
 		for(size_t i = 0; i < rhs.mis.size(); i++)	{
 			p.first = rhs.mis[i].first;
@@ -136,7 +139,7 @@ public:
 //
 //		generate a normalized set of spectrum masses
 //
-		int32_t is = 0;
+		isum = 0;
 		mis.clear();
 		sPair spr;
 		const double ptd = 1.0/70.0; 
@@ -145,9 +148,13 @@ public:
 		//the reduced value corresponding to the fragment ion mass tolerance.
 		//3 values are recorded, to compensate for errors introduced
 		//by the fragment mass reduction rounding process.
+		pks = 0;
+		int32_t pks2 = 0;
+		int32_t pm_limit = (pm - 100000)/2;
 		for(size_t a=0; a < pMs.size();a++)	{
 			m = pMs[a].first;
-
+			isum += pMs[a].second;
+			pks++;
 			p.first = (int32_t)(0.5+(double)m*res);
 			spr.second = p.first;
 			spairs.insert(spr);
@@ -179,16 +186,67 @@ public:
 			spr.first += 1;
 			mis.push_back(p);
 
-			is += 3*p.second;
-		}
-/*		if(sc == 3485)	{
-			auto itp = spairs.begin();
-			while(itp != spairs.end())	{
-				cout << itp->first << "\t" << itp->second << "\t" << pm << endl;
-				itp++;
+			if(pz > 1 and m > 500000 and m < pm_limit)	{
+				pks2++;
+				p.first = (int32_t)(0.5+(double)m*2*res);
+				spr.second = p.first;
+				spairs.insert(spr);
+				spr.first += 1;
+				spairs.insert(spr);
+				spr.first -= 2;
+				spairs.insert(spr);
+				spr.first += 1;
+				p.second = pMs[a].second;
+				mis.push_back(p);
+
+				p.first -= 1;
+				spr.second = p.first;
+				spairs.insert(spr);
+				spr.first += 1;
+				spairs.insert(spr);
+				spr.first -= 2;
+				spairs.insert(spr);
+				spr.first += 1;
+				mis.push_back(p);
+
+				p.first += 2;
+				spr.second = p.first;
+				spairs.insert(spr);
+				spr.first += 1;
+				spairs.insert(spr);
+				spr.first -= 2;
+				spairs.insert(spr);
+				spr.first += 1;
+				mis.push_back(p);
 			}
-		} */
-		isum = is; //note: this value is 3x the actual sum of intensities
+		}
+		pks += (int32_t)(0.5 + (float)pks2/3.0);
+		sort(mis.begin(), mis.end(), 
+               		[](const auto& x, const auto& y) { return x.first < y.first; } );
+
+		auto itmis = mis.begin();
+		int32_t erased = 0;
+		while(itmis != mis.end())	{
+			if((itmis + 1) != mis.end())	{
+				if(itmis->first == (itmis+1)->first)	{
+					if(itmis->second >= (itmis+1)->second)	{
+						itmis = mis.erase(itmis+1);
+						itmis--;
+						erased++;
+					}
+					else	{
+						itmis = mis.erase(itmis);
+						erased++;
+					}
+				}
+				else	{
+					itmis++;
+				}
+			}
+			else	{
+					itmis++;
+			}
+		}
 		return true;
 	}
 };

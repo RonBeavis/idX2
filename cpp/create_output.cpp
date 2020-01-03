@@ -467,7 +467,7 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 	int32_t specs = atoi(_params["spectra"].c_str());
 	double score_min = 200.0;
 	if(specs > 0)	{
-		score_min += 100.0 * log(specs)/2.3;
+		score_min += 50.0 * log(specs)/2.3;
 	}
 	double total_prob = 0.0; //sum of all assigned probabilities
 	int32_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match
@@ -540,6 +540,8 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 			seq = js.seq;
 			// apply math model to result to obtain a probability of stochastic assignment
 			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,score,prob);
+//			cout << res << ":" << seq << ":" << sv[s].peaks << ":" << sv[s].ions << ":" << score << ":" << score_min << endl;
+//			cout << sv[s].ri << endl;
 			if(score < score_min or sv[s].ri < 0.20 or sv[s].peaks < min_c)	{
 				continue; //bail out if match does not pass conditions
 			}
@@ -682,7 +684,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	int32_t specs = atoi(_params["spectra"].c_str());
 	double score_min = 200.0;
 	if(specs > 0)	{
-		score_min += 100.0 * log(specs)/2.3;
+		score_min += 50.0 * log(specs)/2.3;
 	}
 	double total_prob = 0.0; //sum of all assigned probabilities
 	int32_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match

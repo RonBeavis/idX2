@@ -41,15 +41,11 @@ bool create_results::create(map<string, string>& _p, //parameters
 	//initialize variables for the identification process
 	int32_t d = 0;
 	int32_t m = 0;
-	int32_t m2 = 0;
-	int32_t pz = 0;
 	int32_t idi = 0;
 	int32_t cpm = 0;
 	vector<int32_t> idx;
 	vector<vector<int32_t> > ident;
 	vector<int32_t> ims;
-	bool use2 = false; //use z=2 fragments if fragment mass large enough
-	bool use3 = false; //use z=2 fragments if parent z=3
 	auto itk = _k.kerns.kindex_a[0].end(); //store value for subsequent map finds
 	kPair pv; //a kernel (parent,fragment) pair
 	const size_t clength = _k.channels.size();
@@ -71,11 +67,8 @@ bool create_results::create(map<string, string>& _p, //parameters
 		ident.clear(); //initialize the temporary identification vector
 		ims.clear(); //initialize the temporary mass vector
 		mi = _l.spectra[s].pm;
-		pz = (int32_t)_l.spectra[s].pz; //parent charge
 		idx.clear(); //initialize temporary list of kernel identifiers
 		idi = 0;
-		use2 = (mi > 1500000 and pz == 2); //check if parent mass large enough to consider z=2 fragments
-		use3 = (pz > 2); //check if charge large enough to consider z=2 fragments
 		for(a = 0; a < clength; a++)	{
 			if(mi > _k.channels[a].lower)	{
 				_k.channels[a].mv = mi - _k.channels[a].delta; //add the parent mass
@@ -101,7 +94,6 @@ bool create_results::create(map<string, string>& _p, //parameters
 				//loop through spectrum fragment (mass,intensity) pairs
 				for(b = 0; b < _l.spectra[s].mis.size(); b++)	{
 					m = _l.spectra[s].mis[b].first; //fragment mass
-					m2 = m * 2; //fragment mass if fragment charge was 2
 					pv.second = m; //set fragment mass in (mass,intensity) pair
 					itk = _k.kerns.kindex_a[a].find(pv); //
 					idx.clear();
@@ -109,22 +101,6 @@ bool create_results::create(map<string, string>& _p, //parameters
 					if(itk !=  _k.kerns.kindex_a[a].end())	{ 
 						idx.insert(idx.end(),_k.kerns.kindex_a[a][pv].begin(),_k.kerns.kindex_a[a][pv].end());
 						idi = _l.spectra[s].mis[b].second;
-					}
-					else if(use2 and m2 > 100000)	{
-						pv.second = m2;
-						itk = _k.kerns.kindex_a[a].find(pv);
-						if(itk !=  _k.kerns.kindex_a[a].end())	{
-							idx.insert(idx.end(),_k.kerns.kindex_a[a][pv].begin(),_k.kerns.kindex_a[a][pv].end());
-							idi = _l.spectra[s].mis[b].second;
-						}
-					}
-					else if(use3)	{
-						pv.second = m2;
-						itk = _k.kerns.kindex_a[a].find(pv);
-						if(itk !=  _k.kerns.kindex_a[a].end())	{
-							idx.insert(idx.end(),_k.kerns.kindex_a[a][pv].begin(),_k.kerns.kindex_a[a][pv].end());
-							idi = _l.spectra[s].mis[b].second;
-						}
 					}
 					else	{
 						continue;
@@ -139,12 +115,6 @@ bool create_results::create(map<string, string>& _p, //parameters
 			continue;
 		}
 		//check all fragment identifications and find best matches
-		int32_t isum = 0;
-		//find the sum of spectrum fragment intensities
-		for(a = 0; a < _l.spectra[s].mis.size(); a++)	{
-			isum += _l.spectra[s].mis[a].second;
-		}
-		double total = (double)isum/3; //compensate for the method used to compensate for rounding errors
 		map<int32_t,int32_t> ans;
 		map<int32_t,int32_t> aint;
 		//iterate through all information recorded in the ident vector
@@ -187,7 +157,9 @@ bool create_results::create(map<string, string>& _p, //parameters
 		if(mn > 4)	{
 			id r;
 			int32_t max_i = *max_element(iv.begin(),iv.end());
+			int32_t tot_i = 0;
 			for(b = 0; b < mv.size(); b++)	{
+				tot_i += iv[b];
 				if(iv[b] < max_i)	{
 					continue;
 				}
@@ -195,12 +167,12 @@ bool create_results::create(map<string, string>& _p, //parameters
 			}
 			r.sn = z;
 			r.peaks = mn;
-			r.ri = max_i/total;
+			r.ri = (double)tot_i/(double)_l.spectra[s].isum;
 			r.pm = _l.spectra[s].pm;
 			r.pz = _l.spectra[s].pz;
 			r.sc = _l.spectra[s].sc;
 			r.rt = _l.spectra[s].rt;
-			r.ions = (int32_t)_l.spectra[s].mis.size()/3;
+			r.ions = _l.spectra[s].pks;
 			ids.push_back(r);
 		}
 		z += 1;
