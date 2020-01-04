@@ -130,6 +130,7 @@ private:
 	bool create_header_line(string& _h); // generates a TSV formated header line for output
 	bool get_next(FILE *_pFile,osObject& _os); // gets the next osObject from a JSON binary file
 	bool dump_lines(string& _ofile,double _tp); // serializes odict lines into a file
+	bool dump_meta(map<string,string>& _p);
 	double low; // lower value for the ppm window calculated in find_window
 	double high; // upper value for the ppm window calculated in find_window
 	map<int32_t,id> sv;
@@ -137,6 +138,8 @@ private:
 	map<int32_t,string> mt;
 	map<int32_t,vector<string> > odict;
 	vector<int32_t> ppms;
+	map<string,string> info;
+	map<int32_t,int32_t> ppm_map;
 	string fragmentation;
 	const int32_t c13 = 1003; //mass difference between the A1 and A0 peaks
 	map<int32_t,vector<double> > distribution;

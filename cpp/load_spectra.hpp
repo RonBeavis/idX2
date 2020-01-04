@@ -271,6 +271,9 @@ public:
 		spectra.erase(spectra.begin()+_max,spectra.end());
 		return;
 	}
+	void clean_up(void)	{
+		spectra.clear();
+	}
 	vector<spectrum> spectra; // spectrum information for identifications
 
 };

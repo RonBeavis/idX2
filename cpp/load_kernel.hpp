@@ -109,6 +109,13 @@ public:
 	map<int32_t,int32_t> pmindex; //object that will contain (pm,fmN) index
 	set<int32_t> sp_set; //set of spectrum parent masses
 	map<int32_t, set<int32_t> > hu_set;
+	void clean_up(void)	{
+		sp_set.clear();
+		pmindex.clear();
+		kerns.kindex_a.clear();
+		kerns.mvindex_a.clear();
+		spairs.clear();
+	}
 	phmap::flat_hash_set<sPair> spairs; //map of spectrum (parent:fragment) mass pairs 
 	void spectrum_pairs(load_spectra& _l)	{ //creates independent spairs and sp_set used in each thread
 		for(size_t a = 0; a < _l.spectra.size();a++)	{

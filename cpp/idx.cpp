@@ -279,6 +279,8 @@ int main(int argc, char* argv[])	{
 				<< " s" << endl;
 	cout << endl << "create models & report"  << endl;
 	cout.flush();
+	lk_main.clean_up();
+	ls.clean_up();
 	t1 = high_resolution_clock::now(); //begin timing output file creation
 	try	{
 		create_output co;

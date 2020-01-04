@@ -22,6 +22,7 @@ a useful output file specified on the command line
 #include <string>
 #include <set>
 #include <vector>
+#include <algorithm>
 #include "parallel_hashmap/phmap.h"
 using namespace std;
 //simplify calling rapidjson methods
@@ -144,6 +145,10 @@ bool create_output::find_window(void)	{
 			center = i;
 		}
 		it++;
+	}
+	ppm_map.clear();
+	for(i = -20; i < 21;i++)	{
+		ppm_map[i] = vs[i];
 	}
 //	cout << endl << max << endl;
 //	for(int32_t j = -20; j <= 20; j++)	{
@@ -540,8 +545,6 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 			seq = js.seq;
 			// apply math model to result to obtain a probability of stochastic assignment
 			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,score,prob);
-//			cout << res << ":" << seq << ":" << sv[s].peaks << ":" << sv[s].ions << ":" << score << ":" << score_min << endl;
-//			cout << sv[s].ri << endl;
 			if(score < score_min or sv[s].ri < 0.20 or sv[s].peaks < min_c)	{
 				continue; //bail out if match does not pass conditions
 			}
@@ -568,6 +571,7 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 	::fclose(pFile);
 	//open a file stream to output information in odict
 	dump_lines(_params["output file"],total_prob);
+	dump_meta(_params);
 	cout << endl;
 	cout.flush();
 	return true;
@@ -626,24 +630,107 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	ofs.close();
 	//output some additional information for logging
 	cout << endl << endl;
-	cout << "  report summary:" << endl;
-	cout << "     lines = " << tot << endl;
+	char *str = new char[1024];
+	sprintf(str,"%i",tot);
+	info["lines"] = str;
 	if(_tp > 0)	{
-		cout << "     fpr = " << scientific << setprecision(1) << _tp << endl;
+		sprintf(str,"%.1e",_tp);
+		info["fpr"] = str;
 	}
-	if(high_t - low_t < 35)	{
-		double ble = (20.0 - (high_t + 1)) + (low_t - 1 + 20.0) + 2;
-		ble = err/ble;
-		ble = 100.0*(ble*(high_t - low_t)/tot);
-		cout << "     baseline error = " << fixed << setprecision(1) << ble << "% (" << err << ")" << endl;
+	double dtot = 0.0;
+	for(int32_t i = low_t; i <= high_t; i++)	{
+		dtot += (double)ppm_map[i];
+	}
+	double evalue = 0.0;
+	if(dtot > 0.0 and low_t > -15)	{
+		evalue = 0.0;
+		for(int32_t i = -20; i <= -15; i++)	{
+			evalue += (double)ppm_map[i];
+		}
+		evalue /= 6.0;
+		double ble = 100.0*(evalue*(high_t - low_t)/dtot);
+		sprintf(str,"%.1f",ble);
+		info["baseline error (%)"] = str;
+		sprintf(str,"%.1f",evalue);
+		info["baseline error (per ppm)"] = str;
+	}
+	else if(dtot > 0.0 and high_t < 15)	{
+		evalue = 0.0;
+		for(int32_t i = 15; i <= 20; i++)	{
+			evalue += (double)ppm_map[i];
+		}
+		evalue /= 6.0;
+		double ble = 100.0*(evalue*(high_t - low_t)/dtot);
+		sprintf(str,"%.1f",ble);
+		info["baseline error (%)"] = str;
+		sprintf(str,"%.1f",evalue);
+		info["baseline error (ppm)"] = str;
 	}
 	else	{
-		cout << "     baseline error = n/a" << endl;
+		info["baseline error"] = "";
+		info["baseline error (per ppm)"] = "";
 	}
-	cout << "     parent ion tolerance = " << fixed << setprecision(0) << low_t-1 << "," << high_t << endl;
+	sprintf(str,"%i,%i",low_t-1,high_t);
+	info["parent ion tolerance"] = str;
 	return true;
 }
 
+bool create_output::dump_meta(map<string,string>& _p)	{
+	string mpath = _p["output file"] + ".meta";
+	ofstream mfs;
+	mfs.open(mpath);
+	mfs << "{\"input\" : {" << endl;
+	auto itp = _p.begin();
+	string first;
+	string second;
+	while(itp != _p.end())	{
+		first = itp->first;
+		second = itp->second;
+		while(first.find("\\") != first.npos)	{
+			first.replace(first.find("\\"),1,"/");
+		}
+		while(second.find("\\") != second.npos)	{
+			second.replace(second.find("\\"),1,"/");
+		}
+		mfs << "\"" << first << "\" : \"" << second << "\"";
+		itp++;
+		if(itp != _p.end())	{
+			mfs << " , " << endl;
+		}
+		else	{
+			mfs << endl;
+		}
+	}
+	mfs << "},\n\"data\" : {" << endl; 
+	itp = info.begin();
+	while(itp != info.end())	{
+		first = itp->first;
+		second = itp->second;
+		while(first.find("\\") != first.npos)	{
+			first.replace(first.find("\\"),1,"/");
+		}
+		while(second.find("\\") != second.npos)	{
+			second.replace(second.find("\\"),1,"/");
+		}
+		mfs << "\"" << first << "\" : \"" << second << "\"";
+		cout << "  " << first << " : " << second << endl;
+		itp++;
+		mfs << " , " << endl;
+	}
+	mfs << "\"ppms\" : {";
+	auto itppm = ppm_map.begin();
+	while(itppm != ppm_map.end())	{
+		mfs << "\"" << itppm->first << "\" : " << itppm->second;
+		itppm++;
+		if(itppm != ppm_map.end())	{
+			mfs << ",";
+		}
+	}
+	mfs << "} " << endl;
+	mfs << "}}" << endl;
+	mfs.close(); 
+	return true;
+}
 //
 //creates an output file, as specified in _params for a JSON kernel
 //
@@ -787,6 +874,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	delete buffer;
 	//open a file stream to output information in odict
 	dump_lines(_params["output file"],total_prob);
+	dump_meta(_params);
 	cout << endl;
 	cout.flush();
 	return true;
