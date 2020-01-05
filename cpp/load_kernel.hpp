@@ -11,8 +11,6 @@
 #include "rapidjson/document.h"
 using namespace rapidjson; //namespace for the rapidjson methods
 
-typedef std::pair <int32_t,int32_t> kPair; // type used to record kernel (parent,fragment) mass pairs
-
 /*
 kernels is a class that stores the indexes derived from
 reading the kernel file with load_kernel. kindex
@@ -106,30 +104,48 @@ public:
 	string kfile; //path to the kernel file
 	double fragment_tolerance; //fragment mass tolerance in mDa
 	kernels kerns; //object that will contain kernel information
-	map<int32_t,int32_t> pmindex; //object that will contain (pm,fmN) index
 	set<int32_t> sp_set; //set of spectrum parent masses
 	map<int32_t, set<int32_t> > hu_set;
 	void clean_up(void)	{
 		sp_set.clear();
-		pmindex.clear();
 		kerns.kindex_a.clear();
 		kerns.mvindex_a.clear();
 		spairs.clear();
 	}
 	phmap::flat_hash_set<sPair> spairs; //map of spectrum (parent:fragment) mass pairs 
-	void spectrum_pairs(load_spectra& _l)	{ //creates independent spairs and sp_set used in each thread
+/*	void spectrum_pairs(load_spectra& _l)	{ //creates independent spairs and sp_set used in each thread
 		for(size_t a = 0; a < _l.spectra.size();a++)	{
 			sp_set.insert(_l.spectra[a].pm);
 			spairs.insert(_l.spectra[a].spairs.begin(),_l.spectra[a].spairs.end());
+			_l.spectra[a].spairs.clear();
 		}
-	}
+	}*/
 	void add_hu(const int32_t _h,const int32_t _u)	{
 		if(hu_set.find(_h) == hu_set.end())	{
 			hu_set[_h] = set<int32_t>();
 		}
 		hu_set[_h].insert(_u);
 	}
+	void check_and_update(kPair& _pr,int32_t _u)	{
+		for(size_t b = 0; b < clength;b++)	{
+			if(channels[b].dead)	{
+				continue;
+			}
+			_pr.first = channels[b].mv;
+			if(spairs.find(_pr) == spairs.end())	{ //bail if pair not in spectrum pairs
+				continue;
+			}
+			_pr.first = channels[0].mv;
+			if(kerns.kindex_a[b].find(_pr) == kerns.kindex_a[b].end())	{ 
+				kerns.add_pair(_pr,b); //create a new vector for the object
+			}
+			kerns.mvindex_a[b].insert(_pr.first); //add parent mass to set
+			kerns.kindex_a[b][_pr].push_back(_u); //add kernel id to vector
+		}
+		return;
+	}
 	vector<channel> channels;
+	size_t clength;
 };
 
 

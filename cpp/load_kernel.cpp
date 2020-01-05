@@ -18,8 +18,10 @@
 #include <vector>
 #include "parallel_hashmap/phmap.h"
 using namespace std;
-#include "load_spectra.hpp"
+typedef std::pair <int32_t, int32_t> sPair; //type used to record (parent,fragment) pairs
+typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragment) pairs
 #include "load_kernel.hpp"
+#include "load_spectra.hpp"
 
 load_kernel::load_kernel()	{
 	const int32_t c13 = 1003; //difference between the A0 and A1 peaks
@@ -35,6 +37,7 @@ load_kernel::load_kernel()	{
 	ch.delta = 2 * 	c13;
 	ch.lower = 1500 * 1000;
 	channels.push_back(ch);
+	clength = channels.size();
 }
 
 load_kernel::~load_kernel(void)	{
@@ -59,7 +62,6 @@ bool load_kernel::load(void)	{
 	int32_t pm = 0;
 	int32_t mv = 0;
 	int32_t u = 0;
-	int32_t val = 0;
 	int32_t lines = 0;
 	bool skip = true;
 	int32_t lower = 0;
@@ -124,52 +126,23 @@ bool load_kernel::load(void)	{
 			continue;
 		}
 		u = (int32_t)js["u"].GetInt();  //record the unique kernel id
-		pmindex[u] = pm;
 		const Value& jbs = js["bs"]; //retrieve reference to the b-type fragments                                                           
-		pr.first = (int32_t)mv; //initialize the parent mass element of the (parent:fragment) pair
 		for(a = 0; a < jbs.Size();a++)	{
-			val = (int32_t)(0.5+jbs[a].GetDouble()*ft); //reduced fragment mass
-			pr.second = val;
-			for(b = 0; b < clength;b++)	{
-				if(channels[b].dead)	{
-					continue;
-				}
-				pr.first = channels[b].mv;
-				if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-					continue;
-				}
-				pr.first = channels[0].mv;
-				if(kerns.kindex_a[b].find(pr) == kerns.kindex_a[b].end())	{ 
-					kerns.add_pair(pr,b); //create a new vector for the object
-				}
-				kerns.mvindex_a[b].insert(pr.first); //add parent mass to set
-				kerns.kindex_a[b][pr].push_back(u); //add kernel id to vector
-			}
+			pr.second = (int32_t)(0.5+jbs[a].GetDouble()*ft); //reduced fragment mass
+			pr.first = mv;
+			check_and_update(pr,u);
 		}
 		const Value& jys = js["ys"]; //retrieve reference to the y-type fragments
 		for(a = 0; a < jys.Size();a++)	{
-			val = (int32_t)(0.5+jys[a].GetDouble()*ft); //reducted fragment mass
-			pr.second = val;
-			for(b = 0; b < clength;b++)	{
-				if(channels[b].dead)	{
-					continue;
-				}
-				pr.first = channels[b].mv;
-				if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-					continue;
-				}
-				pr.first = channels[0].mv;
-				if(kerns.kindex_a[b].find(pr) == kerns.kindex_a[b].end())	{ 
-					kerns.add_pair(pr,b); //create a new vector for the object
-				}
-				kerns.mvindex_a[b].insert(pr.first); //add parent mass to set
-				kerns.kindex_a[b][pr].push_back(u); //add kernel id to vector
-			}
+			pr.second = (int32_t)(0.5+jys[a].GetDouble()*ft); //reducted fragment mass
+			pr.first = mv;
+			check_and_update(pr,u);
 		}
 	}
 	cout.flush();
 	::fclose(pFile);
 	delete buffer;
+	sp_set.clear();
 	return true;
 }
 
@@ -257,7 +230,6 @@ bool load_kernel::load_binary(void)	{
 	int32_t pm = 0;
 	int32_t mv = 0;
 	int32_t u = 0;
-	int32_t val = 0;
 	int32_t lines = 0;
 	bool skip = true;
 	int32_t lower = 0;
@@ -312,50 +284,21 @@ bool load_kernel::load_binary(void)	{
 			continue;
 		}
 		u = js.u;  //record the unique kernel id
-		pmindex[u] = pm;
-		pr.first = (int32_t)mv; //initialize the parent mass element of the (parent:fragment) pair
 		for(a = 0; a < js.bs.size();a++)	{
-			val = (int32_t)(0.5+js.bs[a]*ft); //reduced fragment mass
-			pr.second = val;
-			for(b = 0; b < clength;b++)	{
-				if(channels[b].dead)	{
-					continue;
-				}
-				pr.first = channels[b].mv;
-				if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-					continue;
-				}
-				pr.first = channels[0].mv;
-				if(kerns.kindex_a[b].find(pr) == kerns.kindex_a[b].end())	{ 
-					kerns.add_pair(pr,b); //create a new vector for the object
-				}
-				kerns.mvindex_a[b].insert(pr.first); //add parent mass to set
-				kerns.kindex_a[b][pr].push_back(u); //add kernel id to vector
-			}
+			pr.second = (int32_t)(0.5+js.bs[a]*ft); //reduced fragment mass
+			pr.first = mv;
+			check_and_update(pr,u);
 		}
 		for(a = 0; a < js.ys.size();a++)	{
-			val = (int32_t)(0.5+js.ys[a]*ft); //reduced fragment mass
-			pr.second = val;
-			for(b = 0; b < clength;b++)	{
-				if(channels[b].dead)	{
-					continue;
-				}
-				pr.first = channels[b].mv;
-				if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
-					continue;
-				}
-				pr.first = channels[0].mv;
-				if(kerns.kindex_a[b].find(pr) == kerns.kindex_a[b].end())	{ 
-					kerns.add_pair(pr,b); //create a new vector for the object
-				}
-				kerns.mvindex_a[b].insert(pr.first); //add parent mass to set
-				kerns.kindex_a[b][pr].push_back(u); //add kernel id to vector
-			}
+			pr.second  = (int32_t)(0.5+js.ys[a]*ft); //reduced fragment mass
+			pr.first = mv;
+			check_and_update(pr,u);
 		}
 	}
 	cout << "\n";
 	cout.flush();
 	::fclose(pFile);
+	sp_set.clear();
 	return true;
 }
 

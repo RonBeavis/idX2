@@ -16,6 +16,9 @@
 #include <vector>
 #include "parallel_hashmap/phmap.h" //fast maps and sets used for indexing
 using namespace std; //namespace used throughout
+typedef std::pair <int32_t, int32_t> sPair; //type used to record (parent,fragment) pairs
+typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragment) pairs
+#include "load_kernel.hpp"
 #include "load_spectra.hpp"
 
 load_spectra::load_spectra(void)	{
@@ -28,7 +31,7 @@ load_spectra::~load_spectra(void)	{
 //	loads spectra using the MGF file specified in _params
 //
 
-bool load_spectra::load(map<string,string>& _params)	{
+bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 	ifstream istr;
 	istr.open(_params["spectrum file"]); // opens input file stream
 	int32_t res = (int32_t)atoi(_params["fragment tolerance"].c_str());
@@ -122,6 +125,9 @@ bool load_spectra::load(map<string,string>& _params)	{
 					i++;
 				}
 				sp.condition(res,50);
+				_lk.sp_set.insert(sp.pm);
+				_lk.spairs.insert(sp.spairs.begin(),sp.spairs.end());
+				sp.spairs.clear();
 				spectra.push_back(sp);
 			}
 			//clean up to be ready for the next spectrum

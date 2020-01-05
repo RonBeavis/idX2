@@ -25,9 +25,12 @@ a useful output file specified on the command line
 #include <algorithm>
 #include "parallel_hashmap/phmap.h"
 using namespace std;
+typedef std::pair <int32_t, int32_t> sPair; //type used to record (parent,fragment) pairs
+typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragment) pairs
+
 //simplify calling rapidjson methods
-#include "load_spectra.hpp"
 #include "load_kernel.hpp"
+#include "load_spectra.hpp"
 #include "create_results.hpp"
 #include "create_output.hpp"
 

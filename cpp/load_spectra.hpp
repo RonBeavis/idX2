@@ -15,8 +15,6 @@ correspond to neutral molecules and are recorded in millidaltons.
 #include <algorithm>
 #include <cmath>
 
-typedef std::pair <int32_t,int32_t> sPair; //type used to record (parent,fragment) pairs
-
 class spectrum
 {
 public:
@@ -259,7 +257,7 @@ public:
 //
 //	load spectra using the information in _p
 //
-	bool load(map<string,string>& _p);
+	bool load(map<string,string>& _p,load_kernel& _lk);
 //
 //	enforces the maximum number of spectra to use by truncating
 //	the spectra vector

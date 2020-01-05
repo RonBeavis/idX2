@@ -67,8 +67,8 @@ variables. When floating point masses are converted to integers, the following m
 	int32_t im = (int32_t)(0.5+dm*1000.0); //integer mass in millidaltons
 
 */
+#include "pch.h"
 
-#include "pch.h" //included for compatibility with Visual C++ precompiled header methods
 #include <iostream>
 #include <fstream>
 #include <cstdio>
@@ -83,8 +83,10 @@ variables. When floating point masses are converted to integers, the following m
 #include "parallel_hashmap/phmap.h" //fast maps and sets used for indexing
 using namespace std; //namespace used throughout
 using namespace std::chrono; //namespace only used in this file
-#include "load_spectra.hpp" //defines the load_spectra object
+typedef std::pair <int32_t, int32_t> sPair; //type used to record (parent,fragment) pairs
+typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragment) pairs
 #include "load_kernel.hpp" //defines the load_kernels object
+#include "load_spectra.hpp" //defines the load_spectra object
 #include "create_results.hpp" //defines the create_results object
 #include "create_output.hpp" //defines the create_output object
 #ifdef MSVC
@@ -203,8 +205,17 @@ int main(int argc, char* argv[])	{
 	cout.flush();
 	high_resolution_clock::time_point t1 = high_resolution_clock::now(); //begin timing spectrum loading
 	load_spectra ls; 
+	load_kernel lk_main;
+	string strK = params["kernel file"];
+	bool isB = false;
+	if (strK.find(".b") == strK.size()-2) {
+		cout.flush();
+		isB = true;
+	}
+	lk_main.kfile = strK; //initialize lk variable
+	lk_main.fragment_tolerance = (double)atof(params["fragment tolerance"].c_str()); //initialize lk variable
 	try	{
-		if(!ls.load(params))	{ // load spectra into the ls object
+		if(!ls.load(params,lk_main))	{ // load spectra into the ls object
 			cout << "Error (idx:0003): failed to load spectrum file \"" << params["spectrum file"] << "\"" << endl;
 			return 1;
 		}
@@ -230,16 +241,7 @@ int main(int argc, char* argv[])	{
 	cout << endl << "load & index kernel"  << endl;
 	cout.flush();
 
-	string strK = params["kernel file"];
-	bool isB = false;
-	if (strK.find(".b") == strK.size()-2) {
-		cout.flush();
-		isB = true;
-	}
-	load_kernel lk_main;
-	lk_main.kfile = strK; //initialize lk variable
-	lk_main.fragment_tolerance = (double)atof(params["fragment tolerance"].c_str()); //initialize lk variable
-	lk_main.spectrum_pairs(ls);
+//	lk_main.spectrum_pairs(ls);
 	try	{
 		if (isB) {
 			lk_main.load_binary();

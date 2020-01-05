@@ -18,8 +18,10 @@
 #include <vector>
 #include "parallel_hashmap/phmap.h"
 using namespace std;
-#include "load_spectra.hpp"
+typedef std::pair <int32_t, int32_t> sPair; //type used to record (parent,fragment) pairs
+typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragment) pairs
 #include "load_kernel.hpp"
+#include "load_spectra.hpp"
 #include "create_results.hpp"
 
 create_results::create_results(void) {
@@ -84,7 +86,7 @@ bool create_results::create(map<string, string>& _p, //parameters
 				continue;
 			}
 			cpm = (int32_t)(0.5 + (double)_k.channels[a].mv * pt); //current reduced parent mass
-			//loop through possible parent mass values to compensate for round errors
+			//loop through possible parent mass values to compensate for rounding errors
 			for (n = 0; n < dvals.size(); n++) {
 				d = dvals[n];
 				pv.first = cpm + d; //initialize (parent,fragment) pair
