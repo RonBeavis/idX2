@@ -80,6 +80,7 @@ variables. When floating point masses are converted to integers, the following m
 #include <vector>
 #include <exception>
 #include <chrono> //used to keep track of method timing
+#include <ctime>
 #include "parallel_hashmap/phmap.h" //fast maps and sets used for indexing
 using namespace std; //namespace used throughout
 using namespace std::chrono; //namespace only used in this file
@@ -188,7 +189,29 @@ int main(int argc, char* argv[])	{
 		return ret;
 	}
 	int32_t maximum_spectra = atol(params["maximum spectra"].c_str()); //if not -1, determines the number of spectra to consider
-	cout << "\nstart ...\nidX parameters" << "\n"; //output the interpreted command line values for logging
+	cout << "started ..." << endl;
+	ostringstream strStream; //using ostringstream to avoid potentially unsafe sprintf
+	strStream.str("");
+	strStream.clear();
+	auto now = std::chrono::system_clock::now();
+    	std::time_t end_time = std::chrono::system_clock::to_time_t(now);
+	strStream << std::ctime(&end_time);
+	string strTemp = strStream.str();
+	while(strTemp.find('\r') != strTemp.npos)	{
+		strTemp.erase(strTemp.find('\r'));
+	}
+	while(strTemp.find('\n') != strTemp.npos)	{
+		strTemp.erase(strTemp.find('\n'));
+	}
+	cout << "start time: " << strTemp << endl;
+	params["time, started"] = strTemp;
+	strStream.str("");
+	strStream.clear();
+	strStream << fixed << setprecision(3);
+	strStream << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()/1000.0;
+	params["time, started timestamp"] = strStream.str();
+
+	cout << "idX parameters" << "\n"; //output the interpreted command line values for logging
 	if(maximum_spectra != -1)	{
 		cout << "\t   max spectra: " << maximum_spectra << endl;
 	}
@@ -233,7 +256,6 @@ int main(int argc, char* argv[])	{
 	cout << "  spectra &Delta;T = " 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
 				<< " s" << endl;
-	ostringstream strStream; //using ostringstream to avoid potentially unsafe sprintf
 	strStream.str("");
 	strStream.clear();
 	strStream << (long)ls.spectra.size();
@@ -327,8 +349,27 @@ int main(int argc, char* argv[])	{
 	strStream.clear();
 	strStream << duration_cast<milliseconds>(t2 - t_origin).count()/1000.0;
 	params["time, total (s)"] = strStream.str();
+	strStream.str("");
+	strStream.clear();
+	now = std::chrono::system_clock::now();
+    	end_time = std::chrono::system_clock::to_time_t(now);
+	strStream << std::ctime(&end_time);
+	strTemp = strStream.str();
+	while(strTemp.find('\r') != strTemp.npos)	{
+		strTemp.erase(strTemp.find('\r'));
+	}
+	while(strTemp.find('\n') != strTemp.npos)	{
+		strTemp.erase(strTemp.find('\n'));
+	}
+	params["time, completed"] = strTemp;
+	strStream.str("");
+	strStream.clear();
+	strStream << fixed << setprecision(3);
+	strStream << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()/1000.0;
+	params["time, completed timestamp"] = strStream.str();
 	co.dump_meta(params);
-	cout << endl << "... done" << endl;
+	cout << "\ncompleted: " << strTemp << endl;
+	cout << "... done" << endl;
 	return 0;
 }
 
