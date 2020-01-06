@@ -319,7 +319,6 @@ int main(int argc, char* argv[])	{
 	t2 = high_resolution_clock::now(); //end timing output file creation
 	cout << "  reporting &Delta;T = " << fixed << setprecision(3) 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << endl;
-	cout << endl << "... done" << endl;
 	strStream.str("");
 	strStream.clear();
 	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
@@ -329,6 +328,7 @@ int main(int argc, char* argv[])	{
 	strStream << duration_cast<milliseconds>(t2 - t_origin).count()/1000.0;
 	params["time, total (s)"] = strStream.str();
 	co.dump_meta(params);
+	cout << endl << "... done" << endl;
 	return 0;
 }
 
