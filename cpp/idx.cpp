@@ -204,6 +204,7 @@ int main(int argc, char* argv[])	{
 	cout << endl << "load & index spectra" << endl;
 	cout.flush();
 	high_resolution_clock::time_point t1 = high_resolution_clock::now(); //begin timing spectrum loading
+	high_resolution_clock::time_point t_origin = t1;
 	load_spectra ls; 
 	load_kernel lk_main;
 	string strK = params["kernel file"];
@@ -323,6 +324,10 @@ int main(int argc, char* argv[])	{
 	strStream.clear();
 	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
 	params["time, output file creation (s)"] = strStream.str();
+	strStream.str("");
+	strStream.clear();
+	strStream << duration_cast<milliseconds>(t2 - t_origin).count()/1000.0;
+	params["time, total (s)"] = strStream.str();
 	co.dump_meta(params);
 	return 0;
 }

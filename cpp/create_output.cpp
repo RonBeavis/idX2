@@ -38,8 +38,8 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 // initialize values
 //
 create_output::create_output(void)	{
-	low = -20.0;
-	high = 20.0;
+	low = -21;
+	high = 21;
 	load_distribution();
 }
 
@@ -136,49 +136,46 @@ bool create_output::find_window(void)	{
 		vs[i] = 0;
 	}
 	auto it = ppms.begin();
-	int32_t max = -22;
-	int32_t center = -1;
 	while(it != ppms.end())	{
 		i = roundf(*it);
 		if(i >= -21 and i <= 21)	{
 			vs[i] += 1;
 		}
+		it++;
+	}
+	ppm_map.clear();
+	int32_t max = 0;
+	int32_t center = -21;
+	for(i = -20; i < 21;i++)	{
 		if(vs[i] > max)	{
 			max = vs[i];
 			center = i;
 		}
-		it++;
-	}
-	ppm_map.clear();
-	for(i = -20; i < 21;i++)	{
 		ppm_map[i] = vs[i];
 	}
-//	cout << endl << max << endl;
-//	for(int32_t j = -20; j <= 20; j++)	{
-//		cout << j << "\t" << vs[j] << endl;
-//	}
-	double ic = (double)max;
-	if(ic < 100.0)	{
-		low = -20.0;
-		high = 20.0;
+	if(max < 100)	{
+		low = -21;
+		high = 21;
 		return true;
 	}
+	double ic = (double)max;
 	int32_t l = -20;
 	for(i = center;i >= -20 ; i--)	{
-		if(vs[i]/ic < 0.01 and vs[i-1]/ic < 0.01)	{
+		if(vs[i]/ic < 0.01)	{
 			l = i;
 			break;
 		}
 	}
 	int32_t h = 20;
 	for(i = center; i <= 20 ; i++)	{
-		if(vs[i]/ic < 0.01 and vs[i+1]/ic < 0.01)	{
+		if(vs[i]/ic < 0.01)	{
 			h = i;
 			break;
 		}
 	}
-	low = (double)l;
-	high = (double)h;
+	low = l;
+	high = h;
+//	cout << "max = " << max << " center = " << center << " l = " << low << " h = " << high << endl;
 	return true;
 }
 //
@@ -565,9 +562,9 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 			else	{
 				odict.insert(pair<int32_t,vector<string> >(s,vector<string>()));
 				odict[s].push_back(new_line);
+				//add ppm value to ppms histogram
+				ppms.push_back(roundf(ppm));
 			}
-			//add ppm value to ppms histogram
-			ppms.push_back(roundf(ppm));
 		}
 		total_prob += max_prob;
 	}
@@ -595,8 +592,8 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	int32_t tot = 0;
 	string t;
 	//loop through result lines and record the information
-	int32_t low_t = roundf(low) - 1;
-	int32_t high_t = roundf(high) + 1;
+	int32_t low_t = low;
+	int32_t high_t = high;
 	int32_t ps_t = 0;
 	int32_t scan = 0;
 	multimap<int32_t,string> ostrings;
@@ -612,13 +609,12 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 			scan = get_scan(t);
 			opair.first = scan;
 			opair.second = header;
-			if(ps_t <= high_t and ps_t >= low_t)	{ //apply the parent mass window
+			if(ps_t < high_t and ps_t > low_t)	{ //apply the parent mass window
 				ostrings.insert(opair);
 				sub++;
 				tot++; //record number of parent mass window hits
 			}
 			else	{
-//				ostrings.insert(opair);
 				err++; // record number of parent mass window misses
 			}
 		}
@@ -640,7 +636,7 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		info["fpr"] = str;
 	}
 	double dtot = 0.0;
-	for(int32_t i = low_t; i <= high_t; i++)	{
+	for(int32_t i = low_t+1; i < high_t; i++)	{
 		dtot += (double)ppm_map[i];
 	}
 	double evalue = 0.0;
@@ -662,7 +658,7 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 			evalue += (double)ppm_map[i];
 		}
 		evalue /= 6.0;
-		double ble = 100.0*(evalue*(high_t - low_t)/dtot);
+		double ble = 100.0*(evalue*(double)(high_t - low_t)/dtot);
 		sprintf(str,"%.1f",ble);
 		info["baseline error (%)"] = str;
 		sprintf(str,"%.1f",evalue);
@@ -672,7 +668,7 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		info["baseline error"] = "";
 		info["baseline error (per ppm)"] = "";
 	}
-	sprintf(str,"%i,%i",low_t-1,high_t);
+	sprintf(str,"%i,%i",low_t,high_t);
 	info["parent ion tolerance"] = str;
 	return true;
 }
@@ -868,9 +864,9 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 			else	{
 				odict.insert(pair<int32_t,vector<string> >(s,vector<string>()));
 				odict[s].push_back(new_line);
+				//add ppm value to ppms histogram
+				ppms.push_back(roundf(ppm));
 			}
-			//add ppm value to ppms histogram
-			ppms.push_back(roundf(ppm));
 		}
 		total_prob += max_prob;
 	}

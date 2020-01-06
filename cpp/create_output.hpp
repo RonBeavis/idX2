@@ -135,8 +135,8 @@ private:
 	bool create_header_line(string& _h); // generates a TSV formated header line for output
 	bool get_next(FILE *_pFile,osObject& _os); // gets the next osObject from a JSON binary file
 	bool dump_lines(string& _ofile,double _tp); // serializes odict lines into a file
-	double low; // lower value for the ppm window calculated in find_window
-	double high; // upper value for the ppm window calculated in find_window
+	int32_t low; // lower value for the ppm window calculated in find_window
+	int32_t high; // upper value for the ppm window calculated in find_window
 	map<int32_t,id> sv;
 	map<int32_t,set<int32_t> > sdict;
 	map<int32_t,string> mt;
