@@ -119,6 +119,11 @@ public:
 	bool create(map<string,string>& _p,create_results& _cr, map<int32_t, set<int32_t> >& _hu);
 	// generates a TSV formated output file from results using a JSON binary kernel
 	bool create_binary(map<string,string>& _p,create_results& _cr, map<int32_t, set<int32_t> >& _hu);
+	bool dump_meta(map<string,string>& _p);
+	int32_t roundf(double _x)	{ 
+		if(_x < 0.0) return (int32_t)(_x - 0.5);
+		return (int32_t)(_x + 0.5);
+	}
 private:
 	bool load_mods(void); //loads a map with strings associated with particular modification masses
 	bool find_window(void); //determines a valid window for results, in parent mass ppm
@@ -130,7 +135,6 @@ private:
 	bool create_header_line(string& _h); // generates a TSV formated header line for output
 	bool get_next(FILE *_pFile,osObject& _os); // gets the next osObject from a JSON binary file
 	bool dump_lines(string& _ofile,double _tp); // serializes odict lines into a file
-	bool dump_meta(map<string,string>& _p);
 	double low; // lower value for the ppm window calculated in find_window
 	double high; // upper value for the ppm window calculated in find_window
 	map<int32_t,id> sv;

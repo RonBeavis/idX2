@@ -139,7 +139,7 @@ bool create_output::find_window(void)	{
 	int32_t max = -22;
 	int32_t center = -1;
 	while(it != ppms.end())	{
-		i = (int32_t)(0.5 + *it);
+		i = roundf(*it);
 		if(i >= -21 and i <= 21)	{
 			vs[i] += 1;
 		}
@@ -567,14 +567,13 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 				odict[s].push_back(new_line);
 			}
 			//add ppm value to ppms histogram
-			ppms.push_back((int32_t)(0.5+ppm));
+			ppms.push_back(roundf(ppm));
 		}
 		total_prob += max_prob;
 	}
 	::fclose(pFile);
 	//open a file stream to output information in odict
 	dump_lines(_params["output file"],total_prob);
-	dump_meta(_params);
 	cout << endl;
 	cout.flush();
 	return true;
@@ -596,8 +595,8 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	int32_t tot = 0;
 	string t;
 	//loop through result lines and record the information
-	int32_t low_t = (int32_t)(0.5 + low) - 1;
-	int32_t high_t = (int32_t)(0.5 + high) + 1;
+	int32_t low_t = roundf(low) - 1;
+	int32_t high_t = roundf(high) + 1;
 	int32_t ps_t = 0;
 	int32_t scan = 0;
 	multimap<int32_t,string> ostrings;
@@ -607,7 +606,7 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		sub = 1;
 		for(size_t b = 0; b < odict[a].size(); b++)	{
 			t = odict[a][b];
-			ps_t = (int32_t)(0.5+get_ppm(t));
+			ps_t = roundf(get_ppm(t));
 			sprintf(pString,"%li\t%li\t%s",(long)a,(long)sub,t.c_str());
 			header = pString;
 			scan = get_scan(t);
@@ -738,8 +737,10 @@ bool create_output::dump_meta(map<string,string>& _p)	{
 //creates an output file, as specified in _params for a JSON kernel
 //
 bool create_output::create(map<string,string>& _params,create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
-	FILE *pFile = ::fopen(_params["kernel file"].c_str(),"r");
-	if(pFile == NULL)	{
+	ifstream ifs;
+	ifs.open(_params["kernel file"],std::ifstream::in);
+	if(!ifs.good())	{
+		cout << "Kernel file \"" << _params["kernel file"] << "\" would not open" << endl;
 		return false;
 	}
 	if(!load_mods())	{ //warns if "reports_mods.txt" is not present
@@ -792,7 +793,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	//the information about individual ids
 	const int max_buffer = 1024*16-1;
 	char *buffer = new char[max_buffer+1];
-	while(::fgets(buffer,max_buffer,pFile) != NULL)	{
+	while(ifs.getline(buffer,max_buffer))	{
 		//output keep-alive text for logging
 		if(c != 0 and c % 10000 == 0)	{
 			cout << '.';
@@ -869,15 +870,14 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 				odict[s].push_back(new_line);
 			}
 			//add ppm value to ppms histogram
-			ppms.push_back((int32_t)(0.5+ppm));
+			ppms.push_back(roundf(ppm));
 		}
 		total_prob += max_prob;
 	}
-	::fclose(pFile);
+	ifs.close();
 	delete buffer;
 	//open a file stream to output information in odict
 	dump_lines(_params["output file"],total_prob);
-	dump_meta(_params);
 	cout << endl;
 	cout.flush();
 	return true;

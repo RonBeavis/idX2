@@ -102,7 +102,7 @@ inline bool exists (const std::string& name) {
 }
 
 int load_params(map<string,string>& params,int argc,char* argv[])	{
-	params["version"] = "idX, 2020.1 (mt)";
+	params["version"] = "idX, 2020.1 (std)";
 	params["fragmentation"] = "";
 	int32_t fragment_tolerance = 400; // default fragment mass tolerance
 	try	{
@@ -237,6 +237,10 @@ int main(int argc, char* argv[])	{
 	strStream.clear();
 	strStream << (long)ls.spectra.size();
 	params["spectra"] = strStream.str();
+	strStream.str("");
+	strStream.clear();
+	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
+	params["time, spectra load (s)"] = strStream.str();
 	t1 = high_resolution_clock::now(); //begin timing kernel loading
 	cout << endl << "load & index kernel"  << endl;
 	cout.flush();
@@ -260,6 +264,10 @@ int main(int argc, char* argv[])	{
 	cout << "  kernels &Delta;T = "  << fixed << setprecision(3) 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
 				<< " s" << endl;
+	strStream.str("");
+	strStream.clear();
+	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
+	params["time, kernel load (s)"] = strStream.str();
 	t1 = high_resolution_clock::now(); //begin timing peptide-to-spectrum matching
 	cout << endl << "perform ids"  << endl;
 	cout.flush();
@@ -281,11 +289,15 @@ int main(int argc, char* argv[])	{
 				<< " s" << endl;
 	cout << endl << "create models & report"  << endl;
 	cout.flush();
+	strStream.str("");
+	strStream.clear();
+	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
+	params["time, id process (s)"] = strStream.str();
 	lk_main.clean_up();
 	ls.clean_up();
 	t1 = high_resolution_clock::now(); //begin timing output file creation
+	create_output co;
 	try	{
-		create_output co;
 		if(isB)	{
 			if(!co.create_binary(params,cr,lk_main.hu_set))	{ //create output file, based on the matches in the cr object
 				cout << "Error (idx:0007): failed to create output " << endl;
@@ -307,6 +319,11 @@ int main(int argc, char* argv[])	{
 	cout << "  reporting &Delta;T = " << fixed << setprecision(3) 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << endl;
 	cout << endl << "... done" << endl;
+	strStream.str("");
+	strStream.clear();
+	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
+	params["time, output file creation (s)"] = strStream.str();
+	co.dump_meta(params);
 	return 0;
 }
 

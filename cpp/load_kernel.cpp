@@ -47,8 +47,10 @@ load_kernel::~load_kernel(void)	{
 // The information is returned in the kerns and pmindex member objects
 //
 bool load_kernel::load(void)	{
-	FILE *pFile = ::fopen(kfile.c_str(),"r");
-	if(pFile == NULL)	{
+	ifstream ifs;
+	ifs.open(kfile,std::ifstream::in);
+	if(!ifs.good())	{
+		cout << "Kernel file \"" << kfile << "\" would not open" << endl;
 		return false;
 	}
 	string line;
@@ -74,7 +76,7 @@ bool load_kernel::load(void)	{
 	size_t b = 0;
 	//loop through kernel lines
 	const size_t clength = channels.size();
-	while(::fgets(buffer,max_buffer,pFile) != NULL)	{
+	while(ifs.getline(buffer,max_buffer))	{
 		//print keep-alive text for logging
 		if(lines != 0 and lines % 5000 == 0)	{
 			cout << '.';
@@ -140,7 +142,7 @@ bool load_kernel::load(void)	{
 		}
 	}
 	cout.flush();
-	::fclose(pFile);
+	ifs.close();
 	delete buffer;
 	sp_set.clear();
 	return true;
