@@ -2,7 +2,7 @@
 #
 # Copyright © 2019 Ronald C. Beavis
 #
-# Loads a spectrum file into a vector of spectrum objects
+# Generates output files based on PSM identications
 #
 
 create_output is an object to perform all of the tasks necessary to generate
