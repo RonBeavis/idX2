@@ -41,6 +41,7 @@ create_output::create_output(void)	{
 	low = -21;
 	high = 21;
 	load_distribution();
+	validation = "";
 }
 
 create_output::~create_output(void)	{
@@ -182,7 +183,7 @@ bool create_output::find_window(void)	{
 // creates a single line of TSV formatted output
 // change this method if you want to alter the output format
 //
-bool create_output::create_line(id& _s,double _pm,double _d,double _ppm,double _score,rapidjson::Document& _js,string& _line)	{
+bool create_output::create_line(id& _s,double _pm,double _d,double _ppm,double _score,rapidjson::Document& _js,int32_t _u,string& _line)	{
 	ostringstream oline;
 	oline << _s.sc << "\t"; // spectrum scan number
 	//write TSV string
@@ -248,6 +249,8 @@ bool create_output::create_line(id& _s,double _pm,double _d,double _ppm,double _
 			}
 		}
 	}
+	oline << "\t" << _u;
+	_line = oline.str();
 	_line = oline.str();
 	return true;
 }
@@ -255,7 +258,7 @@ bool create_output::create_line(id& _s,double _pm,double _d,double _ppm,double _
 // creates a single line of TSV formatted output
 // change this method if you want to alter the output format
 //
-bool create_output::create_line_binary(id& _s,double _pm,double _d,double _ppm,double _score,osObject& _js,string& _line)	{
+bool create_output::create_line_binary(id& _s,double _pm,double _d,double _ppm,double _score,osObject& _js,int32_t _u,string& _line)	{
 	ostringstream oline;
 	oline << _s.sc << "\t"; // spectrum scan number
 	//write TSV string
@@ -310,6 +313,7 @@ bool create_output::create_line_binary(id& _s,double _pm,double _d,double _ppm,d
 			}
 		}
 	}
+	oline << "\t" << _u;
 	_line = oline.str();
 	return true;
 }
@@ -319,16 +323,16 @@ bool create_output::create_line_binary(id& _s,double _pm,double _d,double _ppm,d
 //
 bool create_output::create_header_line(string& _h)	{
 	_h = "Id\tSub\tScan\tRT(s)\tPeptide mass\tDelta\tppm\tz\tProtein acc\t";
-	_h += "Start\tEnd\tPre\tSequence\tPost\tIC\tRI\tlog(f)\tlog(p)\tModifications";
+	_h += "Start\tEnd\tPre\tSequence\tPost\tIC\tRI\tlog(f)\tlog(p)\tModifications\tKernel";
 	return true;
 }
 
-bool create_output::get_next(FILE *_pFile,osObject& _js)
+bool create_output::get_next(ifstream& _ifs,osObject& _js)
 {
 	_js.reset();
-	int jsl = 0;
-	size_t ret = fread(&jsl,4,1,_pFile);
-	if(ret != 1)	{
+	int32_t jsl = 0;
+	_ifs.read((char *)&jsl,4);
+	if(_ifs.fail())	{
 		cout << "failed to get json size" << endl;
 		return false;
 	}
@@ -339,27 +343,24 @@ bool create_output::get_next(FILE *_pFile,osObject& _js)
 	int itemp = 0;
 	size_t i = 0;
 	int *pI = 0;
-	while(count < jsl)	{
-		ret = fread(&klen,4,1,_pFile);
-		ret = fread(_js.pKey,klen,1,_pFile);
+	while(count < jsl and !(_ifs.bad() or _ifs.eof()))	{
+		_ifs.read((char *)&klen,4);
+		_ifs.read((char *)_js.pKey,klen);
 		_js.pKey[klen] = '\0';
 		_js.key = _js.pKey;
-		if(_js.key == "validation")	{
-			return false;
-		}
-		ret = fread(&element,1,1,_pFile);
+		_ifs.read(&element,1);
 		switch(element)	{
 			case 'm':
-				ret = fread(&tlen,4,1,_pFile);
+				_ifs.read((char *)&tlen,4);
 				if(_js.key == "mods")	{
 					_js.mods.clear();
 					char c = '\0';
 					for(i = 0; i < (size_t)tlen;i++)	{
-						ret = fread(&c,1,1,_pFile);
+						_ifs.read((char *)&c,1);
 						_js.mod_temp.res = c;
-						ret = fread(&itemp,4,1,_pFile);
+						_ifs.read((char *)&itemp,4);
 						_js.mod_temp.pos = itemp;
-						ret = fread(&itemp,4,1,_pFile);
+						_ifs.read((char *)&itemp,4);
 						_js.mod_temp.mass = itemp;
 						_js.mods.push_back(_js.mod_temp);
 					}
@@ -368,27 +369,27 @@ bool create_output::get_next(FILE *_pFile,osObject& _js)
 					_js.savs.clear();
 					char c = '\0';
 					for(i = 0; i < (size_t)tlen;i++)	{
-						ret = fread(&c,1,1,_pFile);
+						_ifs.read((char *)&c,1);
 						_js.mod_temp.res = c;
-						ret = fread(&itemp,4,1,_pFile);
+						_ifs.read((char *)&itemp,4);
 						_js.mod_temp.pos = itemp;
-						ret = fread(&itemp,4,1,_pFile);
+						_ifs.read((char *)&itemp,4);
 						_js.mod_temp.mass = itemp;
 						_js.savs.push_back(_js.mod_temp);
 					}
 				}
 				break;
 			case 'l':
-				ret = fread(&tlen,4,1,_pFile);
-				ret = fread(_js.pBuffer,4*tlen,1,_pFile);
+				_ifs.read((char *)&tlen,4);
+				_ifs.read((char *)_js.pBuffer,4*tlen);
 				pI = (int *)_js.pBuffer;
 				if(_js.key == "ns")	{
 					_js.ns.insert(_js.ns.end(),pI,pI+tlen);
 				}
 				break;
 			case 's':
-				ret = fread(&tlen,4,1,_pFile);
-				ret = fread(_js.pBuffer,tlen,1,_pFile);
+				_ifs.read((char *)&tlen,4);
+				_ifs.read((char *)_js.pBuffer,tlen);
 				_js.pBuffer[tlen] = '\0';
 				if(_js.key == "seq")	{
 					_js.seq = (char *)_js.pBuffer;
@@ -404,7 +405,7 @@ bool create_output::get_next(FILE *_pFile,osObject& _js)
 				}
 				break;
 			case 'i':
-				ret = fread(&itemp,4,1,_pFile);
+				_ifs.read((char *)&itemp,4);
 				if(_js.key == "pm")	{
 					_js.pm = itemp;
 				}
@@ -428,6 +429,10 @@ bool create_output::get_next(FILE *_pFile,osObject& _js)
 				cout << "bad element value" << endl;
 		}
 		count++;
+		if(_js.key == "value")	{
+			validation = (char *)_js.pBuffer;
+			return false;
+		}
 	}
 	return true;
 }
@@ -436,8 +441,8 @@ bool create_output::get_next(FILE *_pFile,osObject& _js)
 //creates an output file, as specified in _params for a JSON binary kernel
 //
 bool create_output::create_binary(map<string,string>& _params,create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
-	FILE *pFile = ::fopen(_params["kernel file"].c_str(),"rb");
-	if(pFile == NULL)	{
+	ifstream ifs(_params["kernel file"],ios::in | ios::binary);
+	if(ifs.fail())	{
 		return false;
 	}
 	if(!load_mods())	{ //warns if "reports_mods.txt" is not present
@@ -489,7 +494,7 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 	//loop through the JSON Lines entries in the kernel file to find
 	//the information about individual ids
 	osObject js;
-	while(get_next(pFile,js))	{
+	while(get_next(ifs,js))	{
 		//output keep-alive text for logging
 		if(c != 0 and c % 10000 == 0)	{
 			cout << '.';
@@ -554,7 +559,7 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 			}
 			// construct a line of output for this spectrum object
 			string new_line;
-			create_line_binary(sv[s],pm,delta,ppm,score,js,new_line);
+			create_line_binary(sv[s],pm,delta,ppm,score,js,c-1,new_line);
 			//add output file line to mapped vector for spectrum index s
 			if(odict.find(s) != odict.end())	{
 				odict[s].push_back(new_line);			
@@ -568,7 +573,7 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 		}
 		total_prob += max_prob;
 	}
-	::fclose(pFile);
+	ifs.close();
 	//open a file stream to output information in odict
 	dump_lines(_params["output file"],total_prob);
 	cout << endl;
@@ -789,6 +794,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	//the information about individual ids
 	const int max_buffer = 1024*16-1;
 	char *buffer = new char[max_buffer+1];
+	char *last = new char[max_buffer+1];
 	while(ifs.getline(buffer,max_buffer))	{
 		//output keep-alive text for logging
 		if(c != 0 and c % 10000 == 0)	{
@@ -799,6 +805,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 			cout << " " << c << endl;
 			cout.flush();
 		}
+		memcpy(last,buffer,max_buffer);
 		c++; //increment line count
 		if(hu_set.find(c-1) == hu_set.end())	{ //bail out if the line was not in solution
 			continue;
@@ -806,6 +813,9 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 		Document js; //rapidjson main object
    		js.ParseInsitu(buffer); //add information for a single JSON Lines object
 		if(!js.HasMember("pm"))	{ //bail out if the JSON object does not have a parent mass
+			if(js.HasMember("validation"))	{
+				validation = js["value"].GetString();
+			}
 			continue;
 		}
 		h = (int32_t)js["h"].GetInt();
@@ -856,7 +866,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 			}
 			// construct a line of output for this spectrum object
 			string new_line;
-			create_line(sv[s],pm,delta,ppm,score,js,new_line);
+			create_line(sv[s],pm,delta,ppm,score,js,c-1,new_line);
 			//add output file line to mapped vector for spectrum index s
 			if(odict.find(s) != odict.end())	{
 				odict[s].push_back(new_line);			
@@ -870,8 +880,16 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 		}
 		total_prob += max_prob;
 	}
+	if(strstr(last,"\"validation\"") != NULL)	{
+		Document js; //rapidjson main object
+		js.ParseInsitu(last); //add information for a single JSON Lines object
+		if(js.HasMember("validation"))	{
+			validation = js["value"].GetString();
+		}
+	}
 	ifs.close();
 	delete buffer;
+	delete last;
 	//open a file stream to output information in odict
 	dump_lines(_params["output file"],total_prob);
 	cout << endl;

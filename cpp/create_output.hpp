@@ -120,6 +120,7 @@ public:
 	// generates a TSV formated output file from results using a JSON binary kernel
 	bool create_binary(map<string,string>& _p,create_results& _cr, map<int32_t, set<int32_t> >& _hu);
 	bool dump_meta(map<string,string>& _p);
+	string validation;
 	int32_t roundf(double _x)	{ 
 		if(_x < 0.0) return (int32_t)(_x - 0.5);
 		return (int32_t)(_x + 0.5);
@@ -130,10 +131,10 @@ private:
 	int32_t get_cells(double _pm,int32_t _res); //retrieves one of the parameters necessary for a hypergeometric model
 	//calculates a probability model for a particular identification
 	bool apply_model(int32_t _r,string& _s,double _pm,int32_t _ions,int32_t _lspectrum,double& pscore,double& p);
-	bool create_line(id& _s, double _pm, double _d, double _ppm, double _score, Document& _js, string& _line);
-	bool create_line_binary(id& _s, double _pm, double _d, double _ppm, double _score, osObject& _js, string& _line);
+	bool create_line(id& _s, double _pm, double _d, double _ppm, double _score, Document& _js, int32_t _u, string& _line);
+	bool create_line_binary(id& _s, double _pm, double _d, double _ppm, double _score, osObject& _js, int32_t _u, string& _line);
 	bool create_header_line(string& _h); // generates a TSV formated header line for output
-	bool get_next(FILE *_pFile,osObject& _os); // gets the next osObject from a JSON binary file
+	bool get_next(ifstream& ifs,osObject& _os); // gets the next osObject from a JSON binary file
 	bool dump_lines(string& _ofile,double _tp); // serializes odict lines into a file
 	int32_t low; // lower value for the ppm window calculated in find_window
 	int32_t high; // upper value for the ppm window calculated in find_window

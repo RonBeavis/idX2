@@ -64,7 +64,6 @@ public:
 			kindex_a.push_back(phmap::flat_hash_map<kPair,vector<int32_t> >());
 			mvindex_a.push_back(phmap::flat_hash_set<int32_t>());
 		}
-
 	}
 	virtual ~kernels(void)	{}
 	vector<phmap::flat_hash_map<kPair,vector<int32_t> > > kindex_a; //records the kernels containing the specified pair 
@@ -100,12 +99,13 @@ public:
 	//to retrieve information about candidate kernels that will be used in the peptide-sequence matching process
 	bool load(void);
 	bool load_binary(void);
-	bool get_next(FILE *_pFile,jsObject& _js);
+	bool get_next(ifstream& _ifs,jsObject& _js);
 	string kfile; //path to the kernel file
 	double fragment_tolerance; //fragment mass tolerance in mDa
 	kernels kerns; //object that will contain kernel information
 	set<int32_t> sp_set; //set of spectrum parent masses
 	map<int32_t, set<int32_t> > hu_set;
+	string validation;
 	void clean_up(void)	{
 		sp_set.clear();
 		kerns.kindex_a.clear();

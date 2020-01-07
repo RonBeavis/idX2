@@ -229,17 +229,17 @@ int main(int argc, char* argv[])	{
 	high_resolution_clock::time_point t1 = high_resolution_clock::now(); //begin timing spectrum loading
 	high_resolution_clock::time_point t_origin = t1;
 	load_spectra ls; 
-	load_kernel lk_main;
+	load_kernel lk;
 	string strK = params["kernel file"];
 	bool isB = false;
 	if (strK.find(".b") == strK.size()-2) {
 		cout.flush();
 		isB = true;
 	}
-	lk_main.kfile = strK; //initialize lk variable
-	lk_main.fragment_tolerance = (double)atof(params["fragment tolerance"].c_str()); //initialize lk variable
+	lk.kfile = strK; //initialize lk variable
+	lk.fragment_tolerance = (double)atof(params["fragment tolerance"].c_str()); //initialize lk variable
 	try	{
-		if(!ls.load(params,lk_main))	{ // load spectra into the ls object
+		if(!ls.load(params,lk))	{ // load spectra into the ls object
 			cout << "Error (idx:0003): failed to load spectrum file \"" << params["spectrum file"] << "\"" << endl;
 			return 1;
 		}
@@ -267,23 +267,21 @@ int main(int argc, char* argv[])	{
 	t1 = high_resolution_clock::now(); //begin timing kernel loading
 	cout << endl << "load & index kernel"  << endl;
 	cout.flush();
-
-//	lk_main.spectrum_pairs(ls);
 	try	{
 		if (isB) {
-			lk_main.load_binary();
+			lk.load_binary();
 		}
 		else {
-			lk_main.load();
+			lk.load();
 		}
 	}
 	catch (...)	{
 		cout << "Error (idx:0028): failed to load kernels" << endl;
 		return 1;
 	}
-
+	params["input kernel validation"] = lk.validation;
 	t2 = high_resolution_clock::now(); //end timing kernel loading and report
-	cout << endl << "  kernel pairs = " << lk_main.kerns.size() << endl;
+	cout << endl << "  kernel pairs = " << lk.kerns.size() << endl;
 	cout << "  kernels &Delta;T = "  << fixed << setprecision(3) 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
 				<< " s" << endl;
@@ -296,7 +294,7 @@ int main(int argc, char* argv[])	{
 	cout.flush();
 	create_results cr; //object that will contain match information
 	try	{
-		if(!cr.create(params,ls,lk_main))	{ //create peptide-to-spectrum matches
+		if(!cr.create(params,ls,lk))	{ //create peptide-to-spectrum matches
 			cout << "Error (idx:0006): failed to create results " << endl;
 			return 1;
 		}
@@ -316,19 +314,19 @@ int main(int argc, char* argv[])	{
 	strStream.clear();
 	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
 	params["time, id process (s)"] = strStream.str();
-	lk_main.clean_up();
+	lk.clean_up();
 	ls.clean_up();
 	t1 = high_resolution_clock::now(); //begin timing output file creation
 	create_output co;
 	try	{
 		if(isB)	{
-			if(!co.create_binary(params,cr,lk_main.hu_set))	{ //create output file, based on the matches in the cr object
+			if(!co.create_binary(params,cr,lk.hu_set))	{ //create output file, based on the matches in the cr object
 				cout << "Error (idx:0007): failed to create output " << endl;
 				return 1;
 			}
 		}
 		else	{
-			if(!co.create(params,cr,lk_main.hu_set))	{ //create output file, based on the matches in the cr object
+			if(!co.create(params,cr,lk.hu_set))	{ //create output file, based on the matches in the cr object
 				cout << "Error (idx:0007): failed to create output " << endl;
 				return 1;
 			}
@@ -339,6 +337,7 @@ int main(int argc, char* argv[])	{
 		return 1;
 	}
 	t2 = high_resolution_clock::now(); //end timing output file creation
+	params["output kernel validation"] = co.validation;
 	cout << "  reporting &Delta;T = " << fixed << setprecision(3) 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << endl;
 	strStream.str("");

@@ -7,9 +7,9 @@
 */
 #include "pch.h"
 
-#include <fstream>
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 #include <sys/stat.h>
 #include <unordered_map>
 #include <map>
@@ -38,6 +38,7 @@ load_kernel::load_kernel()	{
 	ch.lower = 1500 * 1000;
 	channels.push_back(ch);
 	clength = channels.size();
+	validation = "";
 }
 
 load_kernel::~load_kernel(void)	{
@@ -93,6 +94,11 @@ bool load_kernel::load(void)	{
 			pm = atoi(pPm + 5);
 		}
 		else	{
+			Document js; //rapidjson main object
+			js.ParseInsitu(buffer);
+			if(js.HasMember("validation"))	{
+				validation = js["value"].GetString();
+			}
 			continue;
 		}
 		ppm_delta = (int32_t)(0.5+(double)pm*ppm); //parent mass tolerance based on ppm
@@ -148,12 +154,15 @@ bool load_kernel::load(void)	{
 	return true;
 }
 
-bool load_kernel::get_next(FILE *_pFile,jsObject& _js)
+bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 {
 	_js.reset();
-	int jsl = 0;
-	size_t ret = fread(&jsl,4,1,_pFile);
-	if(ret != 1)	{
+	int32_t jsl = 0;
+	if(_ifs.fail())	{
+		return false;
+	}
+	_ifs.read((char *)(&jsl),4);
+	if(_ifs.bad())	{
 		cout << "failed to get json size" << endl;
 		return false;
 	}
@@ -164,25 +173,22 @@ bool load_kernel::get_next(FILE *_pFile,jsObject& _js)
 	int itemp = 0;
 	size_t i = 0;
 	int *pI = 0;
-	while(count < jsl)	{
-		ret = fread(&klen,4,1,_pFile);
-		ret = fread(_js.pKey,klen,1,_pFile);
+	while(count < jsl && !(_ifs.bad() or _ifs.eof()))	{
+		_ifs.read((char *)(&klen),4);
+		_ifs.read((char *)(_js.pKey),klen);
 		_js.pKey[klen] = '\0';
 		_js.key = _js.pKey;
-		if(_js.key == "validation")	{
-			return false;
-		}
-		ret = fread(&element,1,1,_pFile);
+		_ifs.read((char *)(&element),1);
 		switch(element)	{
 			case 'm':
-				ret = fread(&tlen,4,1,_pFile);
+				_ifs.read((char *)(&tlen),4);
 				for(i = 0; i < (size_t)tlen;i++)	{
-					ret = fread(_js.pBuffer,9,1,_pFile);
+					_ifs.read((char *)(_js.pBuffer),9);
 				}
 				break;
 			case 'l':
-				ret = fread(&tlen,4,1,_pFile);
-				ret = fread(_js.pBuffer,4*tlen,1,_pFile);
+				_ifs.read((char *)(&tlen),4);
+				_ifs.read((char *)(_js.pBuffer),4*tlen);
 				pI = (int *)_js.pBuffer;
 				if(_js.key == "bs")	{
 					_js.bs.insert(_js.bs.end(),pI,pI+tlen);
@@ -192,12 +198,12 @@ bool load_kernel::get_next(FILE *_pFile,jsObject& _js)
 				}
 				break;
 			case 's':
-				ret = fread(&tlen,4,1,_pFile);
-				ret = fread(_js.pBuffer,tlen,1,_pFile);
+				_ifs.read((char *)(&tlen),4);
+				_ifs.read((char *)(_js.pBuffer),tlen);
 				_js.pBuffer[tlen] = '\0';
 				break;
 			case 'i':
-				ret = fread(&itemp,4,1,_pFile);
+				_ifs.read((char *)(&itemp),4);
 				if(_js.key == "pm")	{
 					_js.pm = itemp;
 				}
@@ -212,13 +218,17 @@ bool load_kernel::get_next(FILE *_pFile,jsObject& _js)
 				cout << "bad element value" << endl;
 		}
 		count++;
+		if(_js.key == "value")	{
+			validation = (char *)_js.pBuffer;
+			return false;
+		}
 	}
 	return true;
 }
 
 bool load_kernel::load_binary(void)	{
-	FILE *pFile = ::fopen(kfile.c_str(),"rb");
-	if(pFile == NULL)	{
+	ifstream ifs(kfile, ios::in | ios::binary);
+	if(ifs.fail())	{
 		return false;
 	}
 	string line;
@@ -243,7 +253,7 @@ bool load_kernel::load_binary(void)	{
 	size_t b = 0;
 	//loop through kernel lines
 	const size_t clength = channels.size();
-	while(get_next(pFile,js))	{
+	while(get_next(ifs,js))	{
 		//print keep-alive text for logging
 		if(lines != 0 and lines % 5000 == 0)	{
 			cout << '.';
@@ -299,7 +309,7 @@ bool load_kernel::load_binary(void)	{
 	}
 	cout << "\n";
 	cout.flush();
-	::fclose(pFile);
+	ifs.close();
 	sp_set.clear();
 	return true;
 }
