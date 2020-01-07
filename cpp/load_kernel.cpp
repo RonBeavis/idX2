@@ -2,8 +2,21 @@
 #
 # Copyright © 2019 Ronald C. Beavis
 #
-# Loads a spectrum file into a vector of spectrum objects
+# Loads a kernel file into a map of spair objects
 #
+
+load_kernel is an object to perform all of the tasks necessary to generate
+a map of spair objects from a kernel file, to be used for peptide PSM assignment
+
+load_kernel takes a list of spectra and reads through the
+original kernel file to find candidate kernels. The relavent
+information is stored in a map to be used by create_results
+
+load_kernel has methods that use either JSON formatted kernels or
+binary JSON formatted kernels. The binary format was made necessary
+because none of the JSON reading modules tested ran quickly enough
+on Microsoft Windows. Because of this, using binary JSON kernels is
+recommended when running the software on Windows.
 */
 #include "pch.h"
 
@@ -23,10 +36,13 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "load_kernel.hpp"
 #include "load_spectra.hpp"
 
+//
+// Initialize the load_kernel object
 load_kernel::load_kernel()	{
 	const int32_t c13 = 1003; //difference between the A0 and A1 peaks
 	kfile = "";
 	fragment_tolerance = 0;
+	// set up the A0, A1 and A2 parent ion mass channels
 	channel ch;
 	ch.delta = 0;
 	ch.lower = 0;
@@ -153,7 +169,9 @@ bool load_kernel::load(void)	{
 	sp_set.clear();
 	return true;
 }
-
+//
+// gets the next binary JSON object from an open ifstream
+//
 bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 {
 	_js.reset();
@@ -225,7 +243,9 @@ bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 	}
 	return true;
 }
-
+//
+// loads kernel information from a binary JSON kernel file
+//
 bool load_kernel::load_binary(void)	{
 	ifstream ifs(kfile, ios::in | ios::binary);
 	if(ifs.fail())	{

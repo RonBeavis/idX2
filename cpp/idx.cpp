@@ -101,7 +101,10 @@ inline bool exists (const std::string& name) {
     ifstream f(name.c_str());
     return f.good();
 }
-
+//
+// takes command line values and processes them into a list of process
+// parameters, stored in a map<string,string> object
+//
 int load_params(map<string,string>& params,int argc,char* argv[])	{
 	params["version"] = "idX, 2020.1 (std)";
 	params["fragmentation"] = "";
@@ -193,10 +196,12 @@ int main(int argc, char* argv[])	{
 	ostringstream strStream; //using ostringstream to avoid potentially unsafe sprintf
 	strStream.str("");
 	strStream.clear();
+	// get current time information for logging into the .meta file
 	auto now = std::chrono::system_clock::now();
     	std::time_t end_time = std::chrono::system_clock::to_time_t(now);
 	strStream << std::ctime(&end_time);
 	string strTemp = strStream.str();
+	// deal with annoying trailing whitespace
 	while(strTemp.find('\r') != strTemp.npos)	{
 		strTemp.erase(strTemp.find('\r'));
 	}
@@ -205,6 +210,7 @@ int main(int argc, char* argv[])	{
 	}
 	cout << "start time: " << strTemp << endl;
 	params["time, started"] = strTemp;
+	// record the epoch timestamp too
 	strStream.str("");
 	strStream.clear();
 	strStream << fixed << setprecision(3);
@@ -230,6 +236,7 @@ int main(int argc, char* argv[])	{
 	high_resolution_clock::time_point t_origin = t1;
 	load_spectra ls; 
 	load_kernel lk;
+	// set up the load_kernel object
 	string strK = params["kernel file"];
 	bool isB = false;
 	if (strK.find(".b") == strK.size()-2) {
@@ -251,6 +258,7 @@ int main(int argc, char* argv[])	{
 		cout << "Error (idx:0024): failed to load spectrum file \"" << params["spectrum file"] << "\"" << endl;
 		return 1;
 	}
+	// record times and report process information
 	high_resolution_clock::time_point t2 = high_resolution_clock::now(); //end timing spectrum loading and report
 	cout << endl << "  spectra = " << ls.spectra.size() << endl;
 	cout << "  spectra &Delta;T = " 
@@ -366,6 +374,7 @@ int main(int argc, char* argv[])	{
 	strStream << fixed << setprecision(3);
 	strStream << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()/1000.0;
 	params["time, completed timestamp"] = strStream.str();
+	// create the .meta file
 	co.dump_meta(params);
 	cout << "\ncompleted: " << strTemp << endl;
 	cout << "... done" << endl;

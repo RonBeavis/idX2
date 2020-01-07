@@ -4,11 +4,22 @@
 #
 # Loads a spectrum file into a vector of spectrum objects
 #
-*/
-/*
+
 create_output is an object to perform all of the tasks necessary to generate
 a useful output file specified on the command line
+
+create_output takes a list of identified kernels and reads through the
+original kernel file to find them. It then constructs a line of text
+describing the results in tab-separated value format and stores that
+line in a text file.
+
+create_output has methods that use either JSON formatted kernels or
+binary JSON formatted kernels. The binary format was made necessary
+because none of the JSON reading modules tested ran quickly enough
+on Microsoft Windows. Because of this, using binary JSON kernels is
+recommended when running the software on Windows.
 */
+
 #include "pch.h"
 
 #include <fstream>
@@ -176,7 +187,6 @@ bool create_output::find_window(void)	{
 	}
 	low = l;
 	high = h;
-//	cout << "max = " << max << " center = " << center << " l = " << low << " h = " << high << endl;
 	return true;
 }
 //
@@ -326,7 +336,9 @@ bool create_output::create_header_line(string& _h)	{
 	_h += "Start\tEnd\tPre\tSequence\tPost\tIC\tRI\tlog(f)\tlog(p)\tModifications\tKernel";
 	return true;
 }
-
+//
+// gets the next kernel from a binary formatted JSON file with an open ifstream
+//
 bool create_output::get_next(ifstream& _ifs,osObject& _js)
 {
 	_js.reset();
@@ -438,7 +450,7 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 }
 
 //
-//creates an output file, as specified in _params for a JSON binary kernel
+//creates an output file, as specified in _params for a binary JSON kernel file
 //
 bool create_output::create_binary(map<string,string>& _params,create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
 	ifstream ifs(_params["kernel file"],ios::in | ios::binary);
@@ -677,7 +689,10 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	info["parent ion tolerance"] = str;
 	return true;
 }
-
+//
+// creates a file containing information about the PSM identification process
+// as well as file validation records
+//
 bool create_output::dump_meta(map<string,string>& _p)	{
 	string mpath = _p["output file"] + ".meta";
 	ofstream mfs;
@@ -792,7 +807,7 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 	int32_t h = 0; //for checking peptide homology
 	//loop through the JSON Lines entries in the kernel file to find
 	//the information about individual ids
-	const int max_buffer = 1024*16-1;
+	const int max_buffer = 1024*8-1;
 	char *buffer = new char[max_buffer+1];
 	char *last = new char[max_buffer+1];
 	while(ifs.getline(buffer,max_buffer))	{
