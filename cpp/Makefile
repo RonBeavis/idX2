@@ -8,7 +8,7 @@ INC_PATH=.
 
 CXX = g++-9
 
-CXXFLAGS = -O2 -I$(INC_PATH) -Wall -std=c++14 -faligned-new -pthread -Wno-psabi
+CXXFLAGS = -O2 -I$(INC_PATH) -Wall -std=c++17 -faligned-new -pthread -Wno-psabi
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
