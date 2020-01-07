@@ -2,7 +2,7 @@
 #
 # Copyright © 2019 Ronald C. Beavis
 #
-# Generates output files based on PSM identications
+# Creates output files based on a PSM identification session
 #
 
 create_output is an object to perform all of the tasks necessary to generate
