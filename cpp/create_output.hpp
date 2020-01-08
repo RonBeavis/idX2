@@ -2,15 +2,15 @@
 #
 # Copyright © 2019 Ronald C. Beavis
 #
-# Identifies kernels corresponding to spectra
+# Creates output files based on a PSM identification session
 #
 */
-/*
-hypergeom facilitates the calculation of the PDF of a specified hypergeometric distribution
-*/
+
 #include "rapidjson/document.h"
 using namespace rapidjson;
-
+//
+// object to retain information about a single peptide modfication
+//
 class mod
 {
 public:
@@ -33,7 +33,9 @@ public:
 		return pos < rhs.pos; 
 	}
 };
-
+//
+// object to contain information from a single binary JSON object
+//
 class osObject
 {
 public:
@@ -75,7 +77,9 @@ public:
 		lb.clear();
 	}
 };
-
+//
+// returns hypergeometic distribution PDF based on input parameters
+//
 class hypergeom	{
 public:
 	// specify hypergeometric distribution parameters
@@ -103,13 +107,10 @@ public:
 		return (n*log(n) - n + log(sqrt(2*pi*n)));
 	}
 };
-/*
-mod records a PTM as a residue, its protein coordinates and the mass of the modification
-*/
-/*
-create_output takes peptide-to-spectrum matches and generates a tab-separated value output
-file describing those identifications.
-*/
+//
+//create_output takes peptide-to-spectrum matches and generates a tab-separated value output
+//file describing those identifications.
+//
 class create_output
 {
 public:

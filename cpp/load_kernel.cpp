@@ -179,18 +179,18 @@ bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 	if(_ifs.fail())	{
 		return false;
 	}
-	_ifs.read((char *)(&jsl),4);
+	_ifs.read((char *)(&jsl),4);	// get the number of entries corresponding to a binary JSON object
 	if(_ifs.bad())	{
 		cout << "failed to get json size" << endl;
 		return false;
 	}
-	int count = 0;
-	int klen = 0;
+	int32_t count = 0;
+	int32_t klen = 0;
 	char element = '\0';
-	int tlen = 0;
-	int itemp = 0;
+	int32_t tlen = 0;
+	int32_t itemp = 0;
 	size_t i = 0;
-	int *pI = 0;
+	int32_t *pI = 0;
 	while(count < jsl && !(_ifs.bad() or _ifs.eof()))	{
 		_ifs.read((char *)(&klen),4);
 		_ifs.read((char *)(_js.pKey),klen);
@@ -198,13 +198,13 @@ bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 		_js.key = _js.pKey;
 		_ifs.read((char *)(&element),1);
 		switch(element)	{
-			case 'm':
+			case 'm':	// special for modification-like entries (all ignored)
 				_ifs.read((char *)(&tlen),4);
 				for(i = 0; i < (size_t)tlen;i++)	{
 					_ifs.read((char *)(_js.pBuffer),9);
 				}
 				break;
-			case 'l':
+			case 'l':	// arrays of integers
 				_ifs.read((char *)(&tlen),4);
 				_ifs.read((char *)(_js.pBuffer),4*tlen);
 				pI = (int *)_js.pBuffer;
@@ -215,12 +215,12 @@ bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 					_js.ys.insert(_js.ys.end(),pI,pI+tlen);
 				}
 				break;
-			case 's':
+			case 's':	// strings
 				_ifs.read((char *)(&tlen),4);
 				_ifs.read((char *)(_js.pBuffer),tlen);
 				_js.pBuffer[tlen] = '\0';
 				break;
-			case 'i':
+			case 'i':	// integers
 				_ifs.read((char *)(&itemp),4);
 				if(_js.key == "pm")	{
 					_js.pm = itemp;
@@ -232,11 +232,12 @@ bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 					_js.u = itemp;
 				}
 				break;
-			default:
-				cout << "bad element value" << endl;
+			default: // should never happen
+				cout << "ERROR: bad element value, binary JSON file corrupt" << endl;
+				exit(1);
 		}
 		count++;
-		if(_js.key == "value")	{
+		if(_js.key == "value")	{ // retrieve the file validation string
 			validation = (char *)_js.pBuffer;
 			return false;
 		}

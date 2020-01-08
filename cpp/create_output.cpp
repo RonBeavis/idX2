@@ -343,18 +343,18 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 {
 	_js.reset();
 	int32_t jsl = 0;
-	_ifs.read((char *)&jsl,4);
+	_ifs.read((char *)&jsl,4); // get the number of entries corresponding to a binary JSON object
 	if(_ifs.fail())	{
 		cout << "failed to get json size" << endl;
 		return false;
 	}
-	int count = 0;
-	int klen = 0;
+	int32_t count = 0;
+	int32_t klen = 0;
 	char element = '\0';
-	int tlen = 0;
-	int itemp = 0;
+	int32_t tlen = 0;
+	int32_t itemp = 0;
 	size_t i = 0;
-	int *pI = 0;
+	int32_t *pI = 0;
 	while(count < jsl and !(_ifs.bad() or _ifs.eof()))	{
 		_ifs.read((char *)&klen,4);
 		_ifs.read((char *)_js.pKey,klen);
@@ -362,9 +362,9 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 		_js.key = _js.pKey;
 		_ifs.read(&element,1);
 		switch(element)	{
-			case 'm':
+			case 'm':	// special for modification-like entries
 				_ifs.read((char *)&tlen,4);
-				if(_js.key == "mods")	{
+				if(_js.key == "mods")	{	//deal with modification specifications
 					_js.mods.clear();
 					char c = '\0';
 					for(i = 0; i < (size_t)tlen;i++)	{
@@ -377,7 +377,7 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 						_js.mods.push_back(_js.mod_temp);
 					}
 				}
-				if(_js.key == "savs")	{
+				if(_js.key == "savs")	{	//deal with amino acid variant specifications
 					_js.savs.clear();
 					char c = '\0';
 					for(i = 0; i < (size_t)tlen;i++)	{
@@ -391,15 +391,15 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 					}
 				}
 				break;
-			case 'l':
+			case 'l':	// arrays of integers
 				_ifs.read((char *)&tlen,4);
 				_ifs.read((char *)_js.pBuffer,4*tlen);
-				pI = (int *)_js.pBuffer;
+				pI = (int32_t *)_js.pBuffer;
 				if(_js.key == "ns")	{
 					_js.ns.insert(_js.ns.end(),pI,pI+tlen);
 				}
 				break;
-			case 's':
+			case 's':	// strings
 				_ifs.read((char *)&tlen,4);
 				_ifs.read((char *)_js.pBuffer,tlen);
 				_js.pBuffer[tlen] = '\0';
@@ -416,7 +416,7 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 					_js.lb = (char *)_js.pBuffer;
 				}
 				break;
-			case 'i':
+			case 'i':	//	integers
 				_ifs.read((char *)&itemp,4);
 				if(_js.key == "pm")	{
 					_js.pm = itemp;
@@ -437,11 +437,12 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 					_js.end = itemp;
 				}
 				break;
-			default:
-				cout << "bad element value" << endl;
+			default: // should never happen
+				cout << "ERROR: bad element value, binary JSON file corrupt" << endl;
+				exit(1);
 		}
 		count++;
-		if(_js.key == "value")	{
+		if(_js.key == "value")	{ // retrieve the file validation string
 			validation = (char *)_js.pBuffer;
 			return false;
 		}
@@ -580,7 +581,9 @@ bool create_output::create_binary(map<string,string>& _params,create_results& _c
 				odict.insert(pair<int32_t,vector<string> >(s,vector<string>()));
 				odict[s].push_back(new_line);
 				//add ppm value to ppms histogram
-				ppms.push_back(roundf(ppm));
+				if(delta < 0.5)	{
+					ppms.push_back(roundf(ppm));
+				}
 			}
 		}
 		total_prob += max_prob;
@@ -890,7 +893,9 @@ bool create_output::create(map<string,string>& _params,create_results& _cr, map<
 				odict.insert(pair<int32_t,vector<string> >(s,vector<string>()));
 				odict[s].push_back(new_line);
 				//add ppm value to ppms histogram
-				ppms.push_back(roundf(ppm));
+				if(delta < 0.5)	{
+					ppms.push_back(roundf(ppm));
+				}
 			}
 		}
 		total_prob += max_prob;
