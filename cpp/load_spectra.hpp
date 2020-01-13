@@ -184,9 +184,9 @@ public:
 			spr.first += 1;
 			mis.push_back(p);
 
-			if(pz > 1 and m > 500000 and m < pm_limit)	{
+			if(pz > 1 and m > 400000 and m < pm_limit)	{
 				pks2++;
-				p.first = (int32_t)(0.5+(double)m*2*res);
+				p.first = (int32_t)(0.5+(double)(m*2-1003)*res);
 				spr.second = p.first;
 				spairs.insert(spr);
 				spr.first += 1;
@@ -218,7 +218,12 @@ public:
 				mis.push_back(p);
 			}
 		}
-		pks += (int32_t)(0.5 + (float)pks2/3.0);
+		if(pks2 > 0 and pz == 2)	{
+			pks += 3;
+		}
+		else if(pks2 > 0 and pz > 2)	{
+			pks += (int32_t)(0.5 + (float)pks2/3.0);
+		}
 		sort(mis.begin(), mis.end(), 
                		[](const auto& x, const auto& y) { return x.first < y.first; } );
 
