@@ -3,5 +3,5 @@ Second version of the idX algorithm. Implemented in C++ 17, using the idX Python
 
 A proteomics PSM assignment engine replacing most of the math with operations involving indexed collections. Identification confidence scoring based on Fisher's noncentral hypergeometric distribution, in conjunction with the number of ions matched with a sequence fragmentation pattern and the fraction of the ion intensity corresponding to those matched ions.
 
-Current version 2020.01.
+Current version 2020.01 (std)
 
