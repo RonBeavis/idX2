@@ -681,6 +681,8 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		double ble = 100.0*(evalue*(high_t - low_t)/dtot);
 		sprintf(str,"%.1f",ble);
 		info["baseline error (%)"] = str;
+		sprintf(str,"%.1f",100.0*get_ble_error(evalue*(high_t - low_t),dtot));
+		info["baseline error (+/- %)"] = str;
 		sprintf(str,"%.1f",evalue);
 		info["baseline error (per ppm)"] = str;
 		if(spectrum_count - scans.size() > 0)	{
@@ -700,6 +702,8 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		double ble = 100.0*(evalue*(double)(high_t - low_t)/dtot);
 		sprintf(str,"%.1f",ble);
 		info["baseline error (%)"] = str;
+		sprintf(str,"%.1f",100.0*get_ble_error(evalue*(high_t - low_t),dtot));
+		info["baseline error (+/- %)"] = str;
 		sprintf(str,"%.1f",evalue);
 		info["baseline error (ppm)"] = str;
 		if(spectrum_count - scans.size() > 0)	{

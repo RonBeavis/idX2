@@ -163,6 +163,15 @@ private:
 		s = t.find("\t",s+1);
 		return atof((t.substr(s+1,t.size()-1)).c_str());
 	}
+	double get_ble_error(double _n,double _t)	{
+		if(_n <= 0.0 or _t <= 0.0)	{
+			return 0.0;
+		}
+		double derr = 1.0/_n + 1.0/_t - 2.0*sqrt(_n)*sqrt(_t)/(_n*_t);
+		derr = sqrt(derr);
+		derr *= _n/_t;
+		return derr;
+	}
 	//loads a structure with the number of cells available for a hypergeometic model, based one
 	//parent mass and fragment mass tolerance, either 20, 50 or 400 mDa.
 	bool load_distribution(void)	{
