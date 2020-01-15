@@ -50,6 +50,7 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 create_output::create_output(void)	{
 	low = -21;
 	high = 21;
+	spectrum_count = 0;
 	load_distribution();
 	validation = "";
 }
@@ -165,6 +166,13 @@ bool create_output::find_window(void)	{
 		ppm_map[i] = vs[i];
 	}
 	if(max < 100)	{
+		low = center - 10;
+		high = center + 10;
+		if(low < -21)	low = -21;
+		if(high > 21)	high = 21;
+		return true;
+	}
+	else if(max < 20)	{
 		low = -21;
 		high = 21;
 		return true;
@@ -453,6 +461,7 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 //creates an output file, as specified in _params for a binary JSON kernel file
 //
 bool create_output::create_binary(map<string,string>& _params,create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
+	spectrum_count = atoi(_params["spectra"].c_str());
 	ifstream ifs(_params["kernel file"],ios::in | ios::binary);
 	if(ifs.fail())	{
 		return false;
@@ -624,6 +633,7 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	multimap<int32_t,string> ostrings;
 	pair<int32_t,string> opair;
 	char *pString =  new char[1024*8];
+	set<int32_t> scans;
 	for(int32_t a = 0; a < (int32_t)odict.size(); a++)	{
 		sub = 1;
 		for(size_t b = 0; b < odict[a].size(); b++)	{
@@ -632,6 +642,7 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 			sprintf(pString,"%li\t%li\t%s",(long)a,(long)sub,t.c_str());
 			header = pString;
 			scan = get_scan(t);
+			scans.insert(scan);
 			opair.first = scan;
 			opair.second = header;
 			if(ps_t < high_t and ps_t > low_t)	{ //apply the parent mass window
@@ -656,10 +667,6 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	char *str = new char[1024];
 	sprintf(str,"%i",tot);
 	info["lines"] = str;
-	if(_tp > 0)	{
-		sprintf(str,"%.1e",_tp);
-		info["fpr"] = str;
-	}
 	double dtot = 0.0;
 	for(int32_t i = low_t+1; i < high_t; i++)	{
 		dtot += (double)ppm_map[i];
@@ -676,6 +683,13 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		info["baseline error (%)"] = str;
 		sprintf(str,"%.1f",evalue);
 		info["baseline error (per ppm)"] = str;
+		if(spectrum_count - scans.size() > 0)	{
+			sprintf(str,"%.1e",evalue*6.0/(spectrum_count - scans.size()));
+			info["fpr"] = str;
+		}
+		else	{
+			info["fpr"] = "";
+		}
 	}
 	else if(dtot > 0.0 and high_t < 15)	{
 		evalue = 0.0;
@@ -688,10 +702,18 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		info["baseline error (%)"] = str;
 		sprintf(str,"%.1f",evalue);
 		info["baseline error (ppm)"] = str;
+		if(spectrum_count - scans.size() > 0)	{
+			sprintf(str,"%.1e",evalue*6.0/(spectrum_count - scans.size()));
+			info["fpr"] = str;
+		}
+		else	{
+			info["fpr"] = "";
+		}
 	}
 	else	{
 		info["baseline error (%)"] = "";
 		info["baseline error (per ppm)"] = "";
+		info["fpr"] = "";
 	}
 	sprintf(str,"%i,%i",low_t,high_t);
 	info["parent ion tolerance"] = str;
@@ -761,6 +783,7 @@ bool create_output::dump_meta(map<string,string>& _p)	{
 //creates an output file, as specified in _params for a JSON kernel
 //
 bool create_output::create(map<string,string>& _params,create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
+	spectrum_count = atoi(_params["spectra"].c_str());
 	ifstream ifs;
 	ifs.open(_params["kernel file"],std::ifstream::in);
 	if(!ifs.good())	{

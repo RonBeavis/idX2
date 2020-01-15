@@ -139,6 +139,7 @@ private:
 	bool dump_lines(string& _ofile,double _tp); // serializes odict lines into a file
 	int32_t low; // lower value for the ppm window calculated in find_window
 	int32_t high; // upper value for the ppm window calculated in find_window
+	int32_t spectrum_count;
 	map<int32_t,id> sv;
 	map<int32_t,set<int32_t> > sdict;
 	map<int32_t,string> mt;
