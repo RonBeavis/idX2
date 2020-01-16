@@ -5,9 +5,9 @@ A proteomics PSM assignment engine replacing most of the math with operations in
 
 Current version 2020.01 (std)
 
-Kernels:
+##Kernels:
 
-idX was designed to use a particular type of peptide sequence index file, which is referred to as a "kernel" file to avoid confusion with other projects that use indexing strategies. Kernel files are prepare prior to run time, so they can be edited and validated prior to use. All masses in kernels are in rounded integer millidaltons, so 1000.1231 Da would be represented as 1000123 mDa. All masses correspond to the neutral mass, not the ion mass. All reference to specific residues are in protein coordinates.
+idX was designed to use a particular type of peptide sequence index file, which is referred to as a "kernel" file to avoid confusion with other projects that use indexing strategies. Kernel files are prepared prior to run time, so they can be edited and validated prior to use. All masses in kernels are in rounded integer millidaltons, so 1000.1231 Da would be represented as 1000123 mDa. All masses correspond to the neutral mass, not the ion mass. All reference to specific residues are in protein coordinates. 
 
 These kernel files contain 3 types of entries and they are written in JSON Lines format.
 
@@ -38,7 +38,7 @@ These kernel files contain 3 types of entries and they are written in JSON Lines
 
 where the "value" is the SHA256 hash of all of the preceeding lines, with leading and trailing white splace removed.
   
-Design:
+##Design:
 
 The software runs using the `main()` method in `idx.cpp` to control the workflow of PSM identification. This method is also responsible for most of the logging text output that is directed to stdout. The order of operations in this method are as follows:
 
@@ -56,3 +56,4 @@ The software runs using the `main()` method in `idx.cpp` to control the workflow
 
 5. A `create_output` object is created which takes the preliminary list of PSM assignments and applies physical and statistical models to the list, generating a final list of PSM assignments that is recorded in a tab-separated value output file as specified on the command line. An additional metadata file in JSON format is also generated and stored at "OUTPUT_PATH.meta".
 
+NOTE: As much as possible, neutral masses in integer millidaltons (type `int32_t`) are used throught the idX code, with as few variable type conversions as possible. C++ STL object indexes and sizes use type `size_t` as often as possible.
