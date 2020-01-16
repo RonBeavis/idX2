@@ -3,9 +3,9 @@ Second version of the idX algorithm. Implemented in C++ 17, using the idX Python
 
 A proteomics PSM assignment engine replacing most of the math with operations involving indexed collections. Identification confidence scoring based on Fisher's noncentral hypergeometric distribution, in conjunction with the number of ions matched with a sequence fragmentation pattern and the fraction of the ion intensity corresponding to those matched ions.
 
-Current version 2020.01 (std)
+## Current version 2020.01 (std)
 
-##Kernels:
+## Kernels:
 
 idX was designed to use a particular type of peptide sequence index file, which is referred to as a "kernel" file to avoid confusion with other projects that use indexing strategies. Kernel files are prepared prior to run time, so they can be edited and validated prior to use. All masses in kernels are in rounded integer millidaltons, so 1000.1231 Da would be represented as 1000123 mDa. All masses correspond to the neutral mass, not the ion mass. All reference to specific residues are in protein coordinates. 
 
@@ -38,7 +38,7 @@ These kernel files contain 3 types of entries and they are written in JSON Lines
 
 where the "value" is the SHA256 hash of all of the preceeding lines, with leading and trailing white splace removed.
   
-##Design:
+## Design:
 
 The software runs using the `main()` method in `idx.cpp` to control the workflow of PSM identification. This method is also responsible for most of the logging text output that is directed to stdout. The order of operations in this method are as follows:
 
