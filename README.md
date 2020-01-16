@@ -7,7 +7,7 @@ Current version: `2020.01 (std)`
 
 ## Kernels:
 
-idX was designed to use a particular type of peptide sequence index file, which is referred to as a "kernel" file to avoid confusion with other projects that use indexing strategies. Kernel files are prepared prior to run time, so they can be edited and validated prior to use. All masses in kernels are in rounded integer millidaltons, so 1000.1231 Da would be represented as 1000123 mDa. All masses correspond to the neutral mass, not the ion mass. All reference to specific residues are in protein coordinates. 
+idX was designed to use a particular type of peptide sequence index file, which is referred to as a "kernel" file to avoid confusion with other projects that use indexing strategies. Kernel files are prepared prior to run time, so they can be edited and validated prior to use. All masses in kernels are in rounded integer millidaltons, so 1000.1231 Da would be represented as 1000123 mDa. All masses correspond to the neutral mass, not the ion mass. All references to specific residues are in protein coordinates. 
 
 These kernel files contain 3 types of entries and they are written in JSON Lines format.
 
