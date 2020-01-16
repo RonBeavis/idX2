@@ -15,7 +15,7 @@ These kernel files contain 3 types of entries and they are written in JSON Lines
 
 {"format":"jsms 1.0","source":"some description","created":"2019-12-17 21:55:36.492350"}
 
-2. The lines containing peptide sequence information must be like:
+2. The lines containing peptide sequence information must be like (but all on 1 line):
 
 {"lv":0,<br />
    "pm":parent mass,<br />
