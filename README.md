@@ -50,7 +50,7 @@ The software runs using the `main()` method in `idx.cpp` to control the workflow
 
 2. A `load_kernel` object is created and passed to a `load_spectra` object, that creates a list of spectra in the `load_spectra` object and an index of those spectra in the `load_kernel` object.
 
-3. The `load_kernel` object is then loaded with kernel information from the kernel file specified on the command line.
+3. The `load_kernel` object is then loaded with peptide sequence information from the kernel file specified on the command line.
 
 4. A `create_results` object is created and it uses the `load_kernel` and `load_spectra` objects to generate a preliminary set of PSM assignments.
 
