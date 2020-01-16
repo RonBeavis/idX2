@@ -26,8 +26,8 @@ These kernel files contain 3 types of entries and they are written in JSON Lines
    "end":end of peptide,<br />
    "seq":"peptide sequence",<br />
    "ns":[list of historical observations],<br />
-   "bs":[list of b-ion masses],<br />
-   "ys":[list of y-ion masses],<br />
+   "bs":[list of b-fragment neutral masses],<br />
+   "ys":[list of y-fragment neutral masses],<br />
    "mods":[lit of modifications [residue,pos,mass]],<br />
    "u":uid for line,<br />
    "h":uid for peptide}<br />
