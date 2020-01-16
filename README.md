@@ -50,10 +50,12 @@ The software runs using the `main()` method in `idx.cpp` to control the workflow
 
 2. A `load_kernel` object is created and passed to a `load_spectra` object, that creates a list of spectra in the `load_spectra` object and an index of those spectra in the `load_kernel` object.
 
-3. The `load_kernel` object is then loaded with peptide sequence information from the kernel file specified on the command line.
+3. The `load_kernel` object is then loaded with peptide sequence information from the kernel file specified on the command line. Only kernels that have pm values within 20 ppm of a spectrum are processed. Only information required for step 4 is stored in memory: the other kernel information required for creating a useful output file is retrieved from a reparsing of the kernel file in step 5. 
 
-4. A `create_results` object is created and it uses the `load_kernel` and `load_spectra` objects to generate a preliminary set of PSM assignments.
+4. A `create_results` object is created and it uses the `load_kernel` and `load_spectra` objects to generate a preliminary set of PSM assignments. Following this step all unnecessary memory objects are released prior to advancing to step 5.
 
-5. A `create_output` object is created which takes the preliminary list of PSM assignments and applies physical and statistical models to the list, generating a final list of PSM assignments that is recorded in a tab-separated value output file as specified on the command line. An additional metadata file in JSON format is also generated and stored at "OUTPUT_PATH.meta".
+5. A `create_output` object is created which takes the preliminary list of PSM assignments and applies physical and statistical models to the list, generating a final list of PSM assignments that is recorded in a tab-separated value output file as specified on the command line. In order to do this, the object re-reads the kernel file, extracting information only from the kernels in the PSM list. This reparsing of the kernel file is one of the main elements in the memory size minimization strategy. An additional metadata file in JSON format is also generated and stored at "OUTPUT_PATH.meta".
 
 NOTE: As much as possible, neutral masses in integer millidaltons (type `int32_t`) are used throught the idX code, with as few variable type conversions as possible. C++ STL object indexes and sizes use type `size_t` as often as possible.
+
+NOTE: The PSM identification process is performed using C++ STL maps and sets. The high performance maps and sets in `parallel_hashmap` are used for the largest indexed data structures.
