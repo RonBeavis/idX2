@@ -106,7 +106,7 @@ inline bool exists (const std::string& name) {
 // parameters, stored in a map<string,string> object
 //
 int load_params(map<string,string>& params,int argc,char* argv[])	{
-	params["version"] = "idX, 2020.1 (std)";
+	params["version"] = "idX, 2020.2 (std)";
 	params["fragmentation"] = "";
 	int32_t fragment_tolerance = 400; // default fragment mass tolerance
 	try	{

@@ -34,6 +34,7 @@ recommended when running the software on Windows.
 #include <vector>
 #include <algorithm>
 #include "parallel_hashmap/phmap.h"
+#include "picosha2/picosha2.h"
 using namespace std;
 typedef std::pair <int32_t, int32_t> sPair; //type used to record (parent,fragment) pairs
 typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragment) pairs
@@ -662,8 +663,15 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		itS++;
 	}
 	ofs.close();
+
+	std::ifstream f(_ofile, std::ios::binary);
+	std::vector<unsigned char> s(picosha2::k_digest_size);
+	picosha2::hash256(f, s.begin(), s.end());
+	f.close();
+	std::string hash_hex_str;
+	picosha2::hash256_hex_string(s, hash_hex_str);
+	info["output file validation"] = hash_hex_str;
 	//output some additional information for logging
-	cout << endl << endl;
 	char *str = new char[1024];
 	sprintf(str,"%i",tot);
 	info["lines"] = str;
