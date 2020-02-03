@@ -264,6 +264,7 @@ int main(int argc, char* argv[])	{
 	cout << "  spectra &Delta;T = " 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
 				<< " s" << endl;
+	params["spectrum file validation"] = ls.strValidation;
 	strStream.str("");
 	strStream.clear();
 	strStream << (long)ls.spectra.size();

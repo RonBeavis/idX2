@@ -15,6 +15,7 @@
 #include <set>
 #include <vector>
 #include "parallel_hashmap/phmap.h" //fast maps and sets used for indexing
+#include "picosha2/picosha2.h"
 using namespace std; //namespace used throughout
 typedef std::pair <int32_t, int32_t> sPair; //type used to record (parent,fragment) pairs
 typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragment) pairs
@@ -22,6 +23,7 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "load_spectra.hpp"
 
 load_spectra::load_spectra(void)	{
+	strValidation = "";
 }
 
 load_spectra::~load_spectra(void)	{
@@ -153,6 +155,13 @@ bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 	cout.flush();
 	delete[] line;
 	istr.close();
+	std::ifstream ifile(_params["spectrum file"], std::ios::binary);
+	std::vector<unsigned char> sfile(picosha2::k_digest_size);
+	picosha2::hash256(ifile, sfile.begin(), sfile.end());
+	ifile.close();
+	std::string hash_hex_str;
+	picosha2::hash256_hex_string(sfile, hash_hex_str);
+	strValidation = hash_hex_str;
 	return true;
 }
 
