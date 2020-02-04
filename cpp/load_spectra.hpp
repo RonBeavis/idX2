@@ -278,7 +278,7 @@ public:
 		spectra.clear();
 	}
 	vector<spectrum> spectra; // spectrum information for identifications
-	string strValidation;
+	string validation;
 
 };
 

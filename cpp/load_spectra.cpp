@@ -23,7 +23,7 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "load_spectra.hpp"
 
 load_spectra::load_spectra(void)	{
-	strValidation = "";
+	validation = "";
 }
 
 load_spectra::~load_spectra(void)	{
@@ -161,7 +161,7 @@ bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 	ifile.close();
 	std::string hash_hex_str;
 	picosha2::hash256_hex_string(sfile, hash_hex_str);
-	strValidation = hash_hex_str;
+	validation = hash_hex_str;
 	return true;
 }
 
