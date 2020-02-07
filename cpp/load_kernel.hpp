@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include "rapidjson/document.h"
+#include <deque>
 using namespace rapidjson; //namespace for the rapidjson methods
 
 /*
@@ -69,20 +70,14 @@ public:
 	vector<phmap::flat_hash_map<kPair,vector<int32_t> > > kindex_a; //records the kernels containing the specified pair 
 	vector<phmap::flat_hash_set<int32_t> > mvindex_a; //set of parent masses with at least one entry in kindex 
 	void add_pair(kPair _v,size_t _a) {kindex_a[_a][_v] = vector<int32_t>();} //addes a new vector to kindex
-	size_t clength;
-	int32_t size(void)	{
+	size_t clength; // number of mass channels (a constant)
+	int32_t size(void)	{ // retrieve the number of values in kindex_a
 		size_t sz = 0;
 		for(size_t a = 0; a < clength; a++)	{
 			sz += kindex_a[a].size();
 		}
 		return (int32_t)sz;
-	} // returns the size of kindex
-	void clear(void) {
-		for(size_t a = 0; a < clength; a++)	{
-			kindex_a[a].clear();
-			mvindex_a[a].clear();
-		}
-	} //resets kindex and mvindex
+	}
 };
 
 /*
@@ -97,36 +92,29 @@ public:
 	virtual ~load_kernel(void);
 	//load uses spectrum information and the kernel file specified in _p
 	//to retrieve information about candidate kernels that will be used in the peptide-sequence matching process
-	bool load(void);
-	bool load_binary(void);
-	bool get_next(ifstream& _ifs,jsObject& _js);
+	bool load(void); // load from a text JSON file
+	bool load_binary(void); // load from a binary JSON file
+	bool get_next(ifstream& _ifs,jsObject& _js); //retrieve the next JSON object from a binary stream
 	string kfile; //path to the kernel file
 	double fragment_tolerance; //fragment mass tolerance in mDa
 	kernels kerns; //object that will contain kernel information
 	set<int32_t> sp_set; //set of spectrum parent masses
-	map<int32_t, set<int32_t> > hu_set;
-	string validation;
-	void clean_up(void)	{
+	map<int32_t, set<int32_t> > hu_set; //mapping unique kernel ids to homologous kernel ids
+	string validation; // hex-encoded SHA256 validation string for kernel file
+	void clean_up(void)	{ // free up memory and reset containers to zero length
 		sp_set.clear();
 		kerns.kindex_a.clear();
 		kerns.mvindex_a.clear();
 		spairs.clear();
 	}
 	phmap::flat_hash_set<sPair> spairs; //map of spectrum (parent:fragment) mass pairs 
-/*	void spectrum_pairs(load_spectra& _l)	{ //creates independent spairs and sp_set used in each thread
-		for(size_t a = 0; a < _l.spectra.size();a++)	{
-			sp_set.insert(_l.spectra[a].pm);
-			spairs.insert(_l.spectra[a].spairs.begin(),_l.spectra[a].spairs.end());
-			_l.spectra[a].spairs.clear();
-		}
-	}*/
-	void add_hu(const int32_t _h,const int32_t _u)	{
+	void add_hu(const int32_t _h,const int32_t _u)	{ // add a homologous kernel id/unique kernel id pair
 		if(hu_set.find(_h) == hu_set.end())	{
 			hu_set[_h] = set<int32_t>();
 		}
 		hu_set[_h].insert(_u);
 	}
-	void check_and_update(kPair& _pr,int32_t _u)	{
+	void check_and_update(kPair& _pr,int32_t _u)	{ //check a new pair/kernel unique id combination
 		for(size_t b = 0; b < clength;b++)	{
 			if(channels[b].dead)	{
 				continue;
@@ -144,7 +132,7 @@ public:
 		}
 		return;
 	}
-	vector<channel> channels;
+	vector<channel> channels; // parent ion mass derived set of masses, e.g. [A0,A1,A2]
 	size_t clength;
 };
 

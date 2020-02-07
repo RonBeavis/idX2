@@ -64,7 +64,18 @@ bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 		temp = line;
 		size = temp.size();
 		equals = temp.find("=");
-		if(temp.find("PEPMASS=") != temp.npos)	{ //tag corresponding to the parent ion mass
+		if(atof(line) > 0.0)	{ //if no tag present, interpret as mass intensity pair
+			masses.push_back(atof(line));
+			pos = line;
+			while(*pos != '\0' && isspace(*pos) != 0)	{
+				pos++;
+			}
+			while(*pos != '\0' && isspace(*pos) == 0)	{
+				pos++;
+			}
+			intensities.push_back(atof(pos));
+		}
+		else if(temp.find("PEPMASS=") != temp.npos)	{ //tag corresponding to the parent ion mass
 			temp = temp.substr(equals+1,size-equals+1);
 			parent = atof(temp.c_str());
 		}
@@ -84,17 +95,6 @@ bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 		else if(temp.find("SCANS=") != temp.npos)	{ //tag for spectrum scan number (if available)
 			temp = temp.substr(equals+1,size-equals+1);
 			scan = atoi(temp.c_str());
-		}
-		else if(atof(line) > 0.0)	{ //if no tag present, interpret as mass intensity pair
-			masses.push_back(atof(line));
-			pos = line;
-			while(*pos != '\0' && isspace(*pos) != 0)	{
-				pos++;
-			}
-			while(*pos != '\0' && isspace(*pos) == 0)	{
-				pos++;
-			}
-			intensities.push_back(atof(pos));
 		}
 		else if(temp.find("END IONS") != temp.npos)	{ //tag for the end of a spectrum
 			//carry out calculations and type conversions

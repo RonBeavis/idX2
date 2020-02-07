@@ -15,6 +15,7 @@
 #include <string>
 #include <set>
 #include <vector>
+#include <deque>
 #include "parallel_hashmap/phmap.h"
 using namespace std;
 typedef std::pair <int32_t, int32_t> sPair; //type used to record (parent,fragment) pairs
