@@ -83,18 +83,18 @@ public:
 class hypergeom	{
 public:
 	// specify hypergeometric distribution parameters
-	hypergeom(int32_t _n,int32_t _r,int32_t _N)	{n = _n; r = _r; N = _N;}
+	hypergeom(const int32_t _n,const int32_t _r,const int32_t _N)	{n = _n; r = _r; N = _N;}
 	virtual ~hypergeom() {}
 	int32_t n;
 	int32_t N;
 	int32_t r;
-	double pdf(int32_t k)	{ //calculate the PDF
+	double pdf(const int32_t k)	{ //calculate the PDF
 		double top = st(n)+st(r)+st(N-n)+st(N-r);
 		double bottom = st(N)+st(k)+st(n-k)+st(r-k)+st(N-n-r+k);
 		double lp = top - bottom;
 		return exp(lp);
 	}
-	double st(int32_t _n)	{ //either directly calculate the log of a factorial or use Sterling's approximation
+	double st(const int32_t _n)	{ //either directly calculate the log of a factorial or use Sterling's approximation
 		if(_n < 50)	{
 			double f = 1.0;
 			for(int32_t i = 1; i <= _n; i++)    {
@@ -117,12 +117,12 @@ public:
 	create_output(void);
 	virtual ~create_output(void);
 	// generates a TSV formated output file from results using a JSON kernel
-	bool create(map<string,string>& _p,create_results& _cr, map<int32_t, set<int32_t> >& _hu);
+	bool create(map<string,string>& _p,const create_results& _cr, map<int32_t, set<int32_t> >& _hu);
 	// generates a TSV formated output file from results using a JSON binary kernel
-	bool create_binary(map<string,string>& _p,create_results& _cr, map<int32_t, set<int32_t> >& _hu);
+	bool create_binary(map<string,string>& _p,const create_results& _cr, map<int32_t, set<int32_t> >& _hu);
 	bool dump_meta(map<string,string>& _p);
 	string validation;
-	int32_t roundf(double _x)	{ 
+	inline int32_t roundf(const double _x)	{ 
 		if(_x < 0.0) return (int32_t)(_x - 0.5);
 		return (int32_t)(_x + 0.5);
 	}
@@ -151,19 +151,19 @@ private:
 	const int32_t c13 = 1003; //mass difference between the A1 and A0 peaks
 	map<int32_t,vector<double> > distribution;
 	//retrieves the ppm column from a formatted output string
-	int32_t get_scan(string& t)	{
+	int32_t get_scan(const string& t)	{
 		size_t s = t.find("\t");
 		s = t.find("\t",s+1);
 		return (int32_t)atoi(t.c_str());
 	}
-	double get_ppm(string& t)	{
+	double get_ppm(const string& t)	{
 		size_t s = t.find("\t");
 		s = t.find("\t",s+1);
 		s = t.find("\t",s+1);
 		s = t.find("\t",s+1);
 		return atof((t.substr(s+1,t.size()-1)).c_str());
 	}
-	double get_ble_error(double _n,double _t)	{
+	double get_ble_error(const double _n,const double _t)	{
 		if(_n <= 0.0 or _t <= 0.0)	{
 			return 0.0;
 		}

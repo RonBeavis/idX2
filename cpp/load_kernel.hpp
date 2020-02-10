@@ -69,7 +69,7 @@ public:
 	virtual ~kernels(void)	{}
 	vector<phmap::flat_hash_map<kPair,vector<int32_t> > > kindex_a; //records the kernels containing the specified pair 
 	vector<phmap::flat_hash_set<int32_t> > mvindex_a; //set of parent masses with at least one entry in kindex 
-	void add_pair(kPair _v,size_t _a) {kindex_a[_a][_v] = vector<int32_t>();} //addes a new vector to kindex
+	void add_pair(const kPair _v,const size_t _a) {kindex_a[_a][_v] = vector<int32_t>();} //addes a new vector to kindex
 	size_t clength; // number of mass channels (a constant)
 	int32_t size(void)	{ // retrieve the number of values in kindex_a
 		size_t sz = 0;
@@ -114,21 +114,22 @@ public:
 		}
 		hu_set[_h].insert(_u);
 	}
-	void check_and_update(kPair& _pr,int32_t _u)	{ //check a new pair/kernel unique id combination
+	inline void check_and_update(const kPair& _pr,const int32_t _u)	{ //check a new pair/kernel unique id combination
+		kPair pr = _pr;
 		for(size_t b = 0; b < clength;b++)	{
 			if(channels[b].dead)	{
 				continue;
 			}
-			_pr.first = channels[b].mv;
-			if(spairs.find(_pr) == spairs.end())	{ //bail if pair not in spectrum pairs
+			pr.first = channels[b].mv;
+			if(spairs.find(pr) == spairs.end())	{ //bail if pair not in spectrum pairs
 				continue;
 			}
-			_pr.first = channels[0].mv;
-			if(kerns.kindex_a[b].find(_pr) == kerns.kindex_a[b].end())	{ 
-				kerns.add_pair(_pr,b); //create a new vector for the object
+			pr.first = channels[0].mv;
+			if(kerns.kindex_a[b].find(pr) == kerns.kindex_a[b].end())	{ 
+				kerns.add_pair(pr,b); //create a new vector for the object
 			}
-			kerns.mvindex_a[b].insert(_pr.first); //add parent mass to set
-			kerns.kindex_a[b][_pr].push_back(_u); //add kernel id to vector
+			kerns.mvindex_a[b].insert(pr.first); //add parent mass to set
+			kerns.kindex_a[b][pr].push_back(_u); //add kernel id to vector
 		}
 		return;
 	}

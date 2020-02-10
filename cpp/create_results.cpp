@@ -44,7 +44,7 @@ create_results::~create_results(void) {
 //
 
 bool create_results::create(map<string, string>& _p, // parameter strings
-		load_spectra& _l, //spectrum informaiton
+		const load_spectra& _l, //spectrum informaiton
 		load_kernel& _k) { // kernel information
 	int32_t z = 1; // serial number for PSM: used if spectrum::sc is not available
 	const double pt = 1.0/70.0;

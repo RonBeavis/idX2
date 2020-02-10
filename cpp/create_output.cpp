@@ -461,7 +461,7 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 //
 //creates an output file, as specified in _params for a binary JSON kernel file
 //
-bool create_output::create_binary(map<string,string>& _params,create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
+bool create_output::create_binary(map<string,string>& _params,const create_results& _cr,map<int32_t, set<int32_t> >& _hu)	{
 	spectrum_count = atoi(_params["spectra"].c_str());
 	ifstream ifs(_params["kernel file"],ios::in | ios::binary);
 	if(ifs.fail())	{
@@ -794,7 +794,7 @@ bool create_output::dump_meta(map<string,string>& _p)	{
 //
 //creates an output file, as specified in _params for a JSON kernel
 //
-bool create_output::create(map<string,string>& _params,create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
+bool create_output::create(map<string,string>& _params, const create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
 	spectrum_count = atoi(_params["spectra"].c_str());
 	ifstream ifs;
 	ifs.open(_params["kernel file"],std::ifstream::in);

@@ -152,15 +152,14 @@ bool load_kernel::load(void)	{
 		}
 		u = (int32_t)js["u"].GetInt();  //record the unique kernel id
 		const Value& jbs = js["bs"]; //retrieve reference to the b-type fragments                                                           
+		const Value& jys = js["ys"]; //retrieve reference to the y-type fragments
+		pr.first = mv;
 		for(a = 0; a < jbs.Size();a++)	{
 			pr.second = (int32_t)(0.5+jbs[a].GetDouble()*ft); //reduced fragment mass
-			pr.first = mv;
 			check_and_update(pr,u);
 		}
-		const Value& jys = js["ys"]; //retrieve reference to the y-type fragments
 		for(a = 0; a < jys.Size();a++)	{
-			pr.second = (int32_t)(0.5+jys[a].GetDouble()*ft); //reducted fragment mass
-			pr.first = mv;
+			pr.second = (int32_t)(0.5+jys[a].GetDouble()*ft); //reduced fragment mass
 			check_and_update(pr,u);
 		}
 	}

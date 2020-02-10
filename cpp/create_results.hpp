@@ -57,9 +57,9 @@ public:
 	//the create method checks the information from the spectrum file with
 	//the information from the kernel file
 	bool create(map<string,string>& _p,
-			load_spectra& _l,
+			const load_spectra& _l,
 			load_kernel& _k);
-	int32_t size(void) { return (int32_t)ids.size(); }
+	inline int32_t size(void) { return (int32_t)ids.size(); }
 	
 	vector<id> ids; //identification information
 };

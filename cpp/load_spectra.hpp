@@ -56,7 +56,7 @@ public:
 	//condition() converts the information in the MGF file into the data types and indexes
 	//used by idX. _ires is the fragment ion mass tolerance and _l is the maximum number
 	//of fragment ions that may be considered.
-	bool condition(int32_t _ires, int32_t _l)	{
+	bool condition(const int32_t _ires, const int32_t _l)	{
 		double i_max = 0.0;
 		const double res = 1.0/(double)_ires;
 		int32_t m = 0;
