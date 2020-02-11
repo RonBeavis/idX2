@@ -114,8 +114,14 @@ public:
 class create_output
 {
 public:
-	create_output(void);
-	virtual ~create_output(void);
+	create_output(void)	{
+		low = -21;
+		high = 21;
+		spectrum_count = 0;
+		load_distribution();
+		validation = "";
+	}
+	virtual ~create_output(void) {}
 	// generates a TSV formated output file from results using a JSON kernel
 	bool create(map<string,string>& _p,const create_results& _cr, map<int32_t, set<int32_t> >& _hu);
 	// generates a TSV formated output file from results using a JSON binary kernel

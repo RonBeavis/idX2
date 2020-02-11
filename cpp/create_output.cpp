@@ -46,19 +46,6 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "create_output.hpp"
 
 //
-// initialize values
-//
-create_output::create_output(void)	{
-	low = -21;
-	high = 21;
-	spectrum_count = 0;
-	load_distribution();
-	validation = "";
-}
-
-create_output::~create_output(void)	{
-}
-//
 //calculates the number of cells to use in the hypergeometric distribution
 //used to model a result, based on the parent mass and fragment mass tolerance
 //using the information in the class member map distribution.
@@ -232,13 +219,13 @@ bool create_output::create_line(id& _s,double _pm,double _d,double _ppm,double _
 	}
 	oline << fixed << setprecision(2); 
 	if(lns > 0)	{ 
-		oline << _s.ri << "\t"; // fraction of spectrum intensity identified
+		oline << (int)(100.0*_s.ri) << "\t"; // fraction of spectrum intensity identified
 		oline << setprecision(1);
 		oline << log(lns)/2.3 << "\t"; // # of times kernel sequence observed (GPMDB)
 		oline << -0.01*_score << "\t"; // score
 	}
 	else	{
-		oline << _s.ri << "\t"; // fraction of spectrum intensity identified
+		oline << (int)(100.0*_s.ri) << "\t"; // fraction of spectrum intensity identified
 		oline << setprecision(1);
 		oline << "-" << "\t";// kernel sequence not observed (GPMDB)
 		oline << -0.01*_score << "\t"; // score
@@ -306,13 +293,13 @@ bool create_output::create_line_binary(id& _s,double _pm,double _d,double _ppm,d
 	}
 	oline << fixed << setprecision(2); 
 	if(lns > 0)	{ 
-		oline << _s.ri << "\t"; // fraction of spectrum intensity identified
+		oline << (int)(100.0*_s.ri) << "\t"; // fraction of spectrum intensity identified
 		oline << setprecision(1);
 		oline << log(lns)/2.3 << "\t"; // # of times kernel sequence observed (GPMDB)
 		oline << -0.01*_score << "\t"; // score
 	}
 	else	{
-		oline << _s.ri << "\t"; // fraction of spectrum intensity identified
+		oline << (int)(100.0*_s.ri) << "\t"; // fraction of spectrum intensity identified
 		oline << setprecision(1);
 		oline << "-" << "\t";// kernel sequence not observed (GPMDB)
 		oline << -0.01*_score << "\t"; // score
@@ -614,13 +601,8 @@ bool create_output::create_binary(map<string,string>& _params,const create_resul
 // Serializes the formulated lines to a specified output file
 //
 bool create_output::dump_lines(string& _ofile,double _tp)	{
-	ofstream ofs;
-	ofs.open(_ofile); //open output stream
-	//define headers for the output TSV file
-	string header;
-	create_header_line(header);
-	ofs << header << endl;
 	//determine parent mass delta ppm acceptance window
+	string temp;
 	find_window();
 	int32_t err = 0;
 	int32_t sub = 0;
@@ -641,11 +623,11 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 			t = odict[a][b];
 			ps_t = roundf(get_ppm(t));
 			sprintf(pString,"%li\t%li\t%s",(long)a,(long)sub,t.c_str());
-			header = pString;
+			temp = pString;
 			scan = get_scan(t);
 			scans.insert(scan);
 			opair.first = scan;
-			opair.second = header;
+			opair.second = temp;
 			if(ps_t < high_t and ps_t > low_t)	{ //apply the parent mass window
 				ostrings.insert(opair);
 				sub++;
@@ -657,17 +639,36 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		}
 	}
 	delete pString;
+	//define headers for the output TSV file
+	create_header_line(temp);
+
+	ofstream ofs;
+	// write output file without line ending characters
+	// so that the hash value can be calculated in 
+	// a platform independent manner
+	ofs.open(_ofile); //open output stream
+	ofs << temp;
 	auto itS = ostrings.begin();
+	while(itS != ostrings.end())	{
+		ofs << itS->second;
+		itS++;
+	}
+	ofs.close();
+	// create validation hash value
+	std::ifstream ifs(_ofile, std::ios::binary);
+	std::vector<unsigned char> s(picosha2::k_digest_size);
+	picosha2::hash256(ifs, s.begin(), s.end());
+	ifs.close();
+	// re-write output file with platform-specific line ending characters
+	ofs.open(_ofile);
+	ofs << temp << endl;
+	itS = ostrings.begin();
 	while(itS != ostrings.end())	{
 		ofs << itS->second << endl;
 		itS++;
 	}
 	ofs.close();
 
-	std::ifstream f(_ofile, std::ios::binary);
-	std::vector<unsigned char> s(picosha2::k_digest_size);
-	picosha2::hash256(f, s.begin(), s.end());
-	f.close();
 	std::string hash_hex_str;
 	picosha2::hash256_hex_string(s, hash_hex_str);
 	info["output file validation"] = hash_hex_str;

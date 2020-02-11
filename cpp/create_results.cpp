@@ -25,20 +25,6 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "create_results.hpp"
 
 //
-// do nothing to initialize the object
-//
-
-create_results::create_results(void) {
-}
-
-//
-// do nothing to remove the object
-//
-
-create_results::~create_results(void) {
-}
-
-//
 // create_results takes the information recorded from the spectrum file and kernel file
 // and generates spectrum-to-peptide matches
 //
@@ -50,19 +36,6 @@ bool create_results::create(map<string, string>& _p, // parameter strings
 	const double pt = 1.0/70.0;
 	vector<int32_t> dvals{ -1,0,1 }; // values to compensate for integer rounding effects
 	// initialize variables for the identification process
-
-/*	auto ik = _k.kerns.kindex_a.begin();
-	size_t textra = 0;
-	while(ik != _k.kerns.kindex_a.end())	{
-		auto iv = ik->begin();
-		textra += ik->capacity() - ik->size();
-		while(iv != ik->end())	{	
-			textra += iv->second.capacity() - iv->second.size();
-			iv++;
-		}
-		ik++;
-	}
-	cout << "extra memory " << textra << endl; */
 	int32_t d = 0;
 	int32_t m = 0;
 	int32_t idi = 0;

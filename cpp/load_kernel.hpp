@@ -69,7 +69,6 @@ public:
 	virtual ~kernels(void)	{}
 	vector<phmap::flat_hash_map<kPair,vector<int32_t> > > kindex_a; //records the kernels containing the specified pair 
 	vector<phmap::flat_hash_set<int32_t> > mvindex_a; //set of parent masses with at least one entry in kindex 
-	void add_pair(const kPair _v,const size_t _a) {kindex_a[_a][_v] = vector<int32_t>();} //addes a new vector to kindex
 	size_t clength; // number of mass channels (a constant)
 	int32_t size(void)	{ // retrieve the number of values in kindex_a
 		size_t sz = 0;
@@ -88,8 +87,25 @@ a file that was specified on the command line.
 class load_kernel
 {
 public:
-	load_kernel(void);
-	virtual ~load_kernel(void);
+	load_kernel(void)		{
+		const int32_t c13 = 1003; //difference between the A0 and A1 peaks
+		kfile = "";
+		fragment_tolerance = 0;
+		// set up the A0, A1 and A2 parent ion mass channels
+		channel ch;
+		ch.delta = 0;
+		ch.lower = 0;
+		channels.push_back(ch);
+		ch.delta = c13;
+		ch.lower = 1000 * 1000;
+		channels.push_back(ch);
+		ch.delta = 2 * 	c13;
+		ch.lower = 1500 * 1000;
+		channels.push_back(ch);
+		clength = channels.size();
+		validation = "";
+	}
+	virtual ~load_kernel(void) {}
 	//load uses spectrum information and the kernel file specified in _p
 	//to retrieve information about candidate kernels that will be used in the peptide-sequence matching process
 	bool load(void); // load from a text JSON file
@@ -101,14 +117,18 @@ public:
 	set<int32_t> sp_set; //set of spectrum parent masses
 	map<int32_t, set<int32_t> > hu_set; //mapping unique kernel ids to homologous kernel ids
 	string validation; // hex-encoded SHA256 validation string for kernel file
+	phmap::flat_hash_set<sPair> spairs; //map of spectrum (parent:fragment) mass pairs 
+	vector<channel> channels; //parent ion mass derived set of masses, e.g. [A0,A1,A2]
+	size_t clength; //number of elements in channels
 	void clean_up(void)	{ // free up memory and reset containers to zero length
 		sp_set.clear();
 		kerns.kindex_a.clear();
+		kerns.kindex_a.shrink_to_fit();
 		kerns.mvindex_a.clear();
+		kerns.mvindex_a.shrink_to_fit();
 		spairs.clear();
 	}
-	phmap::flat_hash_set<sPair> spairs; //map of spectrum (parent:fragment) mass pairs 
-	void add_hu(const int32_t _h,const int32_t _u)	{ // add a homologous kernel id/unique kernel id pair
+	inline void add_hu(const int32_t _h,const int32_t _u)	{ // add a homologous kernel id/unique kernel id pair
 		if(hu_set.find(_h) == hu_set.end())	{
 			hu_set[_h] = set<int32_t>();
 		}
@@ -126,15 +146,13 @@ public:
 			}
 			pr.first = channels[0].mv;
 			if(kerns.kindex_a[b].find(pr) == kerns.kindex_a[b].end())	{ 
-				kerns.add_pair(pr,b); //create a new vector for the object
+				kerns.kindex_a[b][pr] = vector<int32_t>();
 			}
 			kerns.mvindex_a[b].insert(pr.first); //add parent mass to set
 			kerns.kindex_a[b][pr].push_back(_u); //add kernel id to vector
 		}
 		return;
 	}
-	vector<channel> channels; // parent ion mass derived set of masses, e.g. [A0,A1,A2]
-	size_t clength;
 };
 
 

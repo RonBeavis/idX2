@@ -38,29 +38,6 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "load_spectra.hpp"
 
 //
-// Initialize the load_kernel object
-load_kernel::load_kernel()	{
-	const int32_t c13 = 1003; //difference between the A0 and A1 peaks
-	kfile = "";
-	fragment_tolerance = 0;
-	// set up the A0, A1 and A2 parent ion mass channels
-	channel ch;
-	ch.delta = 0;
-	ch.lower = 0;
-	channels.push_back(ch);
-	ch.delta = c13;
-	ch.lower = 1000 * 1000;
-	channels.push_back(ch);
-	ch.delta = 2 * 	c13;
-	ch.lower = 1500 * 1000;
-	channels.push_back(ch);
-	clength = channels.size();
-	validation = "";
-}
-
-load_kernel::~load_kernel(void)	{
-}
-//
 // Loads information from a kernel file specified in _params based on the spectra in the _load_spectra object.
 // The information is returned in the kerns and pmindex member objects
 //
@@ -81,19 +58,21 @@ bool load_kernel::load(void)	{
 	int32_t hmatched = 0;
 	int32_t pm = 0;
 	int32_t mv = 0;
-	int32_t u = 0;
 	int32_t lines = 0;
 	bool skip = true;
 	int32_t lower = 0;
 	int32_t ppm_delta = 0;
+	int32_t ppm_delta2 = 0;
 	kPair pr;
-	const int max_buffer = 1024*16-1;
+	const int max_buffer = 1024*8-1;
 	char *buffer = new char[max_buffer+1];
 	char *pPm = NULL;
 	SizeType a = 0;
 	size_t b = 0;
 	//loop through kernel lines
 	const size_t clength = channels.size();
+	int32_t ut = 0;
+	int32_t ht = 0;
 	while(ifs.getline(buffer,max_buffer))	{
 		//print keep-alive text for logging
 		if(lines != 0 and lines % 5000 == 0)	{
@@ -119,6 +98,7 @@ bool load_kernel::load(void)	{
 			continue;
 		}
 		ppm_delta = (int32_t)(0.5+(double)pm*ppm); //parent mass tolerance based on ppm
+		ppm_delta2 = 2*ppm_delta;
 		//check parent mass for ppm tolerance
 		skip = true;
 		for(b = 0; b < clength; b++)	{
@@ -126,7 +106,7 @@ bool load_kernel::load(void)	{
 			lower = pm - ppm_delta + channels[b].delta;
 			itppm = sp_set.lower_bound(lower);
 			if(pm > channels[b].lower)	{
-				if(itppm != itsp and (*itppm-lower) <= 2*ppm_delta)	{
+				if(itppm != itsp and (*itppm-lower) <= ppm_delta2)	{
 					skip = false;
 					channels[b].dead = false;
 				}
@@ -135,32 +115,29 @@ bool load_kernel::load(void)	{
 				}
 			}
 		}
-		//check A1 mass for ppm tolerance
 		if(skip)	{ //bail out if the parent mass doesn't match
 			skipped++;
 			continue;
 		}
 		Document js; //rapidjson main object
 		js.ParseInsitu(buffer);
-		if(!js.HasMember("pm"))	{ //bail out if the JSON object does not have a parent mass
-			continue;
-		}
-		add_hu(js["h"].GetInt(),js["u"].GetInt());
-		if(js["u"].GetInt() != js["h"].GetInt())	{ //bail out if JSON is not 1st instance of the peptide + mods
+		ut = js["u"].GetInt();  //record the unique kernel id
+		ht = js["h"].GetInt();
+		add_hu(ht,ut);
+		if(ut != ht)	{ //bail out if JSON is not 1st instance of the peptide + mods
 			hmatched++;
 			continue;
 		}
-		u = (int32_t)js["u"].GetInt();  //record the unique kernel id
 		const Value& jbs = js["bs"]; //retrieve reference to the b-type fragments                                                           
 		const Value& jys = js["ys"]; //retrieve reference to the y-type fragments
 		pr.first = mv;
 		for(a = 0; a < jbs.Size();a++)	{
 			pr.second = (int32_t)(0.5+jbs[a].GetDouble()*ft); //reduced fragment mass
-			check_and_update(pr,u);
+			check_and_update(pr,ut);
 		}
 		for(a = 0; a < jys.Size();a++)	{
 			pr.second = (int32_t)(0.5+jys[a].GetDouble()*ft); //reduced fragment mass
-			check_and_update(pr,u);
+			check_and_update(pr,ut);
 		}
 	}
 	cout.flush();
@@ -198,6 +175,18 @@ bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 		_js.key = _js.pKey;
 		_ifs.read((char *)(&element),1);
 		switch(element)	{
+			case 'i':	// integers
+				_ifs.read((char *)(&itemp),4);
+				if(_js.key == "pm")	{
+					_js.pm = itemp;
+				}
+				else if(_js.key == "h")	{
+					_js.h = itemp;
+				}
+				else if(_js.key == "u")	{
+					_js.u = itemp;
+				}
+				break;
 			case 'm':	// special for modification-like entries (all ignored)
 				_ifs.read((char *)(&tlen),4);
 				for(i = 0; i < (size_t)tlen;i++)	{
@@ -219,18 +208,6 @@ bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 				_ifs.read((char *)(&tlen),4);
 				_ifs.read((char *)(_js.pBuffer),tlen);
 				_js.pBuffer[tlen] = '\0';
-				break;
-			case 'i':	// integers
-				_ifs.read((char *)(&itemp),4);
-				if(_js.key == "pm")	{
-					_js.pm = itemp;
-				}
-				else if(_js.key == "h")	{
-					_js.h = itemp;
-				}
-				else if(_js.key == "u")	{
-					_js.u = itemp;
-				}
 				break;
 			default: // should never happen
 				cout << "ERROR: bad element value, binary JSON file corrupt" << endl;
@@ -267,6 +244,7 @@ bool load_kernel::load_binary(void)	{
 	bool skip = true;
 	int32_t lower = 0;
 	int32_t ppm_delta = 0;
+	int32_t ppm_delta2 = 0;
 	kPair pr;
 	jsObject js;
 	//loop through kernel lines
@@ -291,6 +269,7 @@ bool load_kernel::load_binary(void)	{
 			continue;
 		}
 		ppm_delta = (int32_t)(0.5+(double)pm*ppm); //parent mass tolerance based on ppm
+		ppm_delta2 = 2*ppm_delta;
 		//check parent mass for ppm tolerance
 		skip = true;
 		for(b = 0; b < clength; b++)	{
@@ -298,7 +277,7 @@ bool load_kernel::load_binary(void)	{
 			lower = pm - ppm_delta + channels[b].delta;
 			itppm = sp_set.lower_bound(lower);
 			if(pm > channels[b].lower)	{
-				if(itppm != itsp and (*itppm-lower) <= 2*ppm_delta)	{
+				if(itppm != itsp and (*itppm-lower) <= ppm_delta2)	{
 					skip = false;
 					channels[b].dead = false;
 				}
@@ -317,14 +296,13 @@ bool load_kernel::load_binary(void)	{
 			continue;
 		}
 		u = js.u;  //record the unique kernel id
+		pr.first = mv;
 		for(a = 0; a < js.bs.size();a++)	{
 			pr.second = (int32_t)(0.5+js.bs[a]*ft); //reduced fragment mass
-			pr.first = mv;
 			check_and_update(pr,u);
 		}
 		for(a = 0; a < js.ys.size();a++)	{
 			pr.second  = (int32_t)(0.5+js.ys[a]*ft); //reduced fragment mass
-			pr.first = mv;
 			check_and_update(pr,u);
 		}
 	}
