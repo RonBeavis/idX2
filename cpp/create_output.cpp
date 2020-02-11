@@ -484,10 +484,6 @@ bool create_output::create_binary(map<string,string>& _params,const create_resul
 	int32_t res = atoi(_params["fragment tolerance"].c_str());
 	int32_t inferred = 0;
 	double score_min = 200.0;
-//	int32_t specs = atoi(_params["spectra"].c_str());
-//	if(specs > 0)	{
-//		score_min += 50.0 * log(specs)/2.3;
-//	}
 	double total_prob = 0.0; //sum of all assigned probabilities
 	int32_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match
 	//updated min_c value based on instrument resolution
@@ -833,10 +829,6 @@ bool create_output::create(map<string,string>& _params, const create_results& _c
 	int32_t res = atoi(_params["fragment tolerance"].c_str());
 	int32_t inferred = 0;
 	double score_min = 200.0;
-//	int32_t specs = atoi(_params["spectra"].c_str());
-//	if(specs > 0)	{
-//		score_min += 50.0 * log(specs)/2.3;
-//	}
 	double total_prob = 0.0; //sum of all assigned probabilities
 	int32_t min_c = 8; //minimum number of assignments necessary for a spectrum-to-kernel match
 	//updated min_c value based on instrument resolution
@@ -922,15 +914,9 @@ bool create_output::create(map<string,string>& _params, const create_results& _c
 			seq = js["seq"].GetString();
 			// apply math model to result to obtain a probability of stochastic assignment
 			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,score,prob);
-//			if(c-1 == 726716)	{
-//				cout << "peaks = " << sv[s].peaks << " min_l = " << min_l << " ri = " << sv[s].ri << " score = " << score << endl;
-//			}
 			if(score < score_min or sv[s].ri < 0.2 or sv[s].peaks < min_l)	{
 				continue; //bail out if match does not pass conditions
 			}
-//			if(c-1 == 726716)	{
-//				cout << "peaks = " << sv[s].peaks << " ri = " << sv[s].ri << " score = " << score << endl;
-//			}
 			//keep track of the probabilities
 			if(prob > max_prob)	{
 				max_prob = prob;

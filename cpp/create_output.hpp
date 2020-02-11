@@ -44,24 +44,24 @@ public:
 			pKey = new char[256];
 	}
 	virtual ~osObject(void)	{delete pKey;delete pBuffer;}
-	int32_t pm;
-	int32_t u;
-	int32_t h;
-	int32_t pz;
-	int32_t beg;
-	int32_t end;
-	vector<int32_t> ns;
-	mod mod_temp;
-	vector<mod> mods;
-	vector<mod> savs;
-	unsigned int size;
-	char *pKey;
-	unsigned char *pBuffer;
-	string key;
-	string seq;
-	string pre;
-	string post;
-	string lb;
+	int32_t pm; // parent mass
+	int32_t u; // uid for entry
+	int32_t h; // uid for first entry matching the current one
+	int32_t pz; // parent charge
+	int32_t beg; // peptide sequence start (protein coordinates)
+	int32_t end; // peptide sequence end (protein coordinates)
+	vector<int32_t> ns; // number of times observed
+	mod mod_temp; // a peptide modification
+	vector<mod> mods; // list of peptide modifications
+	vector<mod> savs; // list of peptide savs
+	unsigned int size; // used for storing temporary object size value
+	char *pKey; // buffer for reading a binary JSON key string
+	unsigned char *pBuffer; // buffer for reading a binary JSON object
+	string key; // binary JSON key string
+	string seq; // peptide sequence
+	string pre; // residue before the sequence
+	string post; // residue after the sequence 
+	string lb; // protein sequence accession/label
 	void reset(void)	{
 		pm = 0;
 		u = 0;
@@ -85,16 +85,18 @@ public:
 	// specify hypergeometric distribution parameters
 	hypergeom(const int32_t _n,const int32_t _r,const int32_t _N)	{n = _n; r = _r; N = _N;}
 	virtual ~hypergeom() {}
-	int32_t n;
-	int32_t N;
-	int32_t r;
-	double pdf(const int32_t k)	{ //calculate the PDF
+	int32_t n; // number of spectrum ions
+	int32_t N; // number of sequence ions possible
+	int32_t r; // number of fragment ion mass values available (cells)
+	//calculate the PDF (probability density function)
+	double pdf(const int32_t k)	{ 
 		double top = st(n)+st(r)+st(N-n)+st(N-r);
 		double bottom = st(N)+st(k)+st(n-k)+st(r-k)+st(N-n-r+k);
 		double lp = top - bottom;
 		return exp(lp);
 	}
-	double st(const int32_t _n)	{ //either directly calculate the log of a factorial or use Sterling's approximation
+	//either directly calculate the log of a factorial or use Sterling's approximation
+	double st(const int32_t _n)	{ 
 		if(_n < 50)	{
 			double f = 1.0;
 			for(int32_t i = 1; i <= _n; i++)    {
@@ -127,8 +129,8 @@ public:
 	// generates a TSV formated output file from results using a JSON binary kernel
 	bool create_binary(map<string,string>& _p,const create_results& _cr, map<int32_t, set<int32_t> >& _hu);
 	bool dump_meta(map<string,string>& _p);
-	string validation;
-	inline int32_t roundf(const double _x)	{ 
+	string validation; // SHA256 hash value for the output file
+	inline int32_t roundf(const double _x)	{  // for rounding compatibility
 		if(_x < 0.0) return (int32_t)(_x - 0.5);
 		return (int32_t)(_x + 0.5);
 	}
@@ -138,30 +140,33 @@ private:
 	int32_t get_cells(double _pm,int32_t _res); //retrieves one of the parameters necessary for a hypergeometric model
 	//calculates a probability model for a particular identification
 	bool apply_model(int32_t _r,string& _s,double _pm,int32_t _ions,int32_t _lspectrum,double& pscore,double& p);
+	//generates a single line of text for TSV file output from JSON kernels
 	bool create_line(id& _s, double _pm, double _d, double _ppm, double _score, Document& _js, int32_t _u, string& _line);
+	//generates a single line of text for TSV file output from JSON binary kernels
 	bool create_line_binary(id& _s, double _pm, double _d, double _ppm, double _score, osObject& _js, int32_t _u, string& _line);
 	bool create_header_line(string& _h); // generates a TSV formated header line for output
 	bool get_next(ifstream& ifs,osObject& _os); // gets the next osObject from a JSON binary file
 	bool dump_lines(string& _ofile,double _tp); // serializes odict lines into a file
 	int32_t low; // lower value for the ppm window calculated in find_window
 	int32_t high; // upper value for the ppm window calculated in find_window
-	int32_t spectrum_count;
-	map<int32_t,id> sv;
-	map<int32_t,set<int32_t> > sdict;
-	map<int32_t,string> mt;
-	map<int32_t,vector<string> > odict;
-	vector<int32_t> ppms;
-	map<string,string> info;
-	map<int32_t,int32_t> ppm_map;
-	string fragmentation;
+	int32_t spectrum_count; // number of spectra
+	map<int32_t,id> sv; // records id values
+	map<int32_t,set<int32_t> > sdict; // records id values in a map
+	map<int32_t,string> mt; // modification strings
+	map<int32_t,vector<string> > odict; // output line map
+	vector<int32_t> ppms; // ppm values for spectrum parent masses
+	map<string,string> info; // information stored in text strings
+	map<int32_t,int32_t> ppm_map; // ppm values for spectrum parent masses
+	string fragmentation; // fragmentation type information
 	const int32_t c13 = 1003; //mass difference between the A1 and A0 peaks
-	map<int32_t,vector<double> > distribution;
-	//retrieves the ppm column from a formatted output string
+	map<int32_t,vector<double> > distribution; // available fragment mass density distribution
+	//retrieves the scan column from a formatted output string
 	int32_t get_scan(const string& t)	{
 		size_t s = t.find("\t");
 		s = t.find("\t",s+1);
 		return (int32_t)atoi(t.c_str());
 	}
+	//retrieves the ppm column from a formatted output string
 	double get_ppm(const string& t)	{
 		size_t s = t.find("\t");
 		s = t.find("\t",s+1);
@@ -169,6 +174,7 @@ private:
 		s = t.find("\t",s+1);
 		return atof((t.substr(s+1,t.size()-1)).c_str());
 	}
+	//calculates the error in the base line error estimate
 	double get_ble_error(const double _n,const double _t)	{
 		if(_n <= 0.0 or _t <= 0.0)	{
 			return 0.0;
