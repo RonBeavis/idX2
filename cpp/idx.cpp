@@ -118,7 +118,7 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 		}
 	}
 	catch (...)	{
-		cout << "Error (idx:0020): exception thrown trying to assign fragment tolerance" << endl;
+		cout << "Error (idx:0020): exception thrown trying to assign fragment tolerance" << '\n';
 		return 1;
 	}
 	ostringstream strStream; //using ostringstream to avoid potentially unsafe sprintf
@@ -129,19 +129,19 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 		params["fragment tolerance"] = strStream.str();
 	}
 	catch (...)	{
-		cout << "Error (idx:0021): exception thrown trying to assign fragment tolerance" << endl;
+		cout << "Error (idx:0021): exception thrown trying to assign fragment tolerance" << '\n';
 		return 1;
 	}
 	string spectrum_file = argv[1]; //file containing spectra in MGF format
     	if(!exists(spectrum_file))	{
-		cout << "Error (idx:0001): spectrum file \"" << spectrum_file << "\" does not exist" << endl;
+		cout << "Error (idx:0001): spectrum file \"" << spectrum_file << "\" does not exist" << '\n';
 		return 2;
 	}
 	params["spectrum file"] = spectrum_file;
 
 	string kernel_file = argv[2]; //file containing kernels in JSON Lines format
     	if(!exists(kernel_file))	{
-		cout << "Error (idx:0002): kernel file \"" << kernel_file << "\" does not exist" << endl;
+		cout << "Error (idx:0002): kernel file \"" << kernel_file << "\" does not exist" << '\n';
 		return 2;
 	}
 	params["kernel file"] = kernel_file;
@@ -160,7 +160,7 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 		params["maximum spectra"] = strStream.str();
 	}
 	catch (...)	{
-		cout << "Error (idx:0022): exception thrown trying to assign maximum spectra" << endl;
+		cout << "Error (idx:0022): exception thrown trying to assign maximum spectra" << '\n';
 		return 1;
 	}
 	int32_t parent_tolerance = 20; //parent ion mass tolerance is fixed at 20 mDa
@@ -171,7 +171,7 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 		params["parent tolerance"] = strStream.str();
 	}
 	catch (...)	{
-		cout << "Error (idx:0023): exception thrown trying to assign parent tolerance" << endl;
+		cout << "Error (idx:0023): exception thrown trying to assign parent tolerance" << '\n';
 		return 1;
 	}
 	return 0;
@@ -183,7 +183,7 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 int main(int argc, char* argv[])	{
 	// checks for command line arguments
 	if(argc < 4)	{
-		cout << "usage:\t>idX SPECTRA_FILE KERNEL_FILE OUTPUT_FILE (high|medium|low*) (max_spectra*)" << endl;
+		cout << "usage:\t>idX SPECTRA_FILE KERNEL_FILE OUTPUT_FILE (high|medium|low*) (max_spectra*)" << '\n';
 		return 0;
 	}
 	map<string,string> params; //used to store command line and other constant values
@@ -192,7 +192,7 @@ int main(int argc, char* argv[])	{
 		return ret;
 	}
 	int32_t maximum_spectra = atol(params["maximum spectra"].c_str()); //if not -1, determines the number of spectra to consider
-	cout << "started ..." << endl;
+	cout << "started ..." << '\n';
 	ostringstream strStream; //using ostringstream to avoid potentially unsafe sprintf
 	strStream.str("");
 	strStream.clear();
@@ -208,7 +208,7 @@ int main(int argc, char* argv[])	{
 	while(strTemp.find('\n') != strTemp.npos)	{
 		strTemp.erase(strTemp.find('\n'));
 	}
-	cout << "start time: " << strTemp << endl;
+	cout << "start time: " << strTemp << '\n';
 	params["time, started"] = strTemp;
 	// record the epoch timestamp too
 	strStream.str("");
@@ -219,18 +219,18 @@ int main(int argc, char* argv[])	{
 
 	cout << "idX parameters" << "\n"; //output the interpreted command line values for logging
 	if(maximum_spectra != -1)	{
-		cout << "\t   max spectra: " << maximum_spectra << endl;
+		cout << "\t   max spectra: " << maximum_spectra << '\n';
 	}
 	else	{
 		cout << "\t   max spectra: unlimited" << "\n";
 	}
-	cout << "\t  fragment tol: " << params["fragment tolerance"] << " mDa" << endl;
-	cout << "\t    parent tol: " << params["parent tolerance"] << " ppm" << endl;
-	cout << "\t spectrum file: " << params["spectrum file"] << endl;
-	cout << "\t   kernel file: " << params["kernel file"] << endl;
-	cout << "\t   output file: " << params["output file"] << endl;
-	cout << "\t       version: " << params["version"] << endl;
-	cout << endl << "load & index spectra" << endl;
+	cout << "\t  fragment tol: " << params["fragment tolerance"] << " mDa" << '\n';
+	cout << "\t    parent tol: " << params["parent tolerance"] << " ppm" << '\n';
+	cout << "\t spectrum file: " << params["spectrum file"] << '\n';
+	cout << "\t   kernel file: " << params["kernel file"] << '\n';
+	cout << "\t   output file: " << params["output file"] << '\n';
+	cout << "\t       version: " << params["version"] << '\n';
+	cout << '\n' << "load & index spectra" << '\n';
 	cout.flush();
 	high_resolution_clock::time_point t1 = high_resolution_clock::now(); //begin timing spectrum loading
 	high_resolution_clock::time_point t_origin = t1;
@@ -247,7 +247,7 @@ int main(int argc, char* argv[])	{
 	lk.fragment_tolerance = (double)atof(params["fragment tolerance"].c_str()); //initialize lk variable
 	try	{
 		if(!ls.load(params,lk))	{ // load spectra into the ls object
-			cout << "Error (idx:0003): failed to load spectrum file \"" << params["spectrum file"] << "\"" << endl;
+			cout << "Error (idx:0003): failed to load spectrum file \"" << params["spectrum file"] << "\"" << '\n';
 			return 1;
 		}
 		if(maximum_spectra != -1)	{ // use the maximum_spectra value, if specified
@@ -255,15 +255,15 @@ int main(int argc, char* argv[])	{
 		} 
 	}
 	catch (...)	{
-		cout << "Error (idx:0024): failed to load spectrum file \"" << params["spectrum file"] << "\"" << endl;
+		cout << "Error (idx:0024): failed to load spectrum file \"" << params["spectrum file"] << "\"" << '\n';
 		return 1;
 	}
 	// record times and report process information
 	high_resolution_clock::time_point t2 = high_resolution_clock::now(); //end timing spectrum loading and report
-	cout << endl << "  spectra = " << ls.spectra.size() << endl;
+	cout << '\n' << "  spectra = " << ls.spectra.size() << '\n';
 	cout << "  spectra &Delta;T = " 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
-				<< " s" << endl;
+				<< " s" << '\n';
 	params["spectrum file validation"] = ls.validation;
 	strStream.str("");
 	strStream.clear();
@@ -274,7 +274,7 @@ int main(int argc, char* argv[])	{
 	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
 	params["time, spectra load (s)"] = strStream.str();
 	t1 = high_resolution_clock::now(); //begin timing kernel loading
-	cout << endl << "load & index kernel"  << endl;
+	cout << '\n' << "load & index kernel"  << '\n';
 	cout.flush();
 	try	{
 		if (isB) {
@@ -285,39 +285,39 @@ int main(int argc, char* argv[])	{
 		}
 	}
 	catch (...)	{
-		cout << "Error (idx:0028): failed to load kernels" << endl;
+		cout << "Error (idx:0028): failed to load kernels" << '\n';
 		return 1;
 	}
 	params["input kernel validation"] = lk.validation;
 	t2 = high_resolution_clock::now(); //end timing kernel loading and report
-	cout << endl << "  kernel pairs = " << lk.kerns.size() << endl;
+	cout << '\n' << "  kernel pairs = " << lk.kerns.size() << '\n';
 	cout << "  kernels &Delta;T = "  << fixed << setprecision(3) 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
-				<< " s" << endl;
+				<< " s" << '\n';
 	strStream.str("");
 	strStream.clear();
 	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
 	params["time, kernel load (s)"] = strStream.str();
 	t1 = high_resolution_clock::now(); //begin timing peptide-to-spectrum matching
-	cout << endl << "perform ids"  << endl;
+	cout << '\n' << "perform ids"  << '\n';
 	cout.flush();
 	create_results cr; //object that will contain match information
 	try	{
 		if(!cr.create(params,ls,lk))	{ //create peptide-to-spectrum matches
-			cout << "Error (idx:0006): failed to create results " << endl;
+			cout << "Error (idx:0006): failed to create results " << '\n';
 			return 1;
 		}
 	}
 	catch (...)	{
-		cout << "Error (idx:0026): failed to load create results" << endl;
+		cout << "Error (idx:0026): failed to load create results" << '\n';
 		return 1;
 	}
 	t2 = high_resolution_clock::now(); //end timing peptide-to-spectrum matching and report
-	cout << endl << "  results = " << cr.size() << endl;
+	cout << '\n' << "  results = " << cr.size() << '\n';
 	cout << "  results &Delta;T = "  << fixed << setprecision(3)
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
-				<< " s" << endl;
-	cout << endl << "create models & report"  << endl;
+				<< " s" << '\n';
+	cout << '\n' << "create models & report"  << '\n';
 	cout.flush();
 	strStream.str("");
 	strStream.clear();
@@ -330,25 +330,25 @@ int main(int argc, char* argv[])	{
 	try	{
 		if(isB)	{
 			if(!co.create_binary(params,cr,lk.hu_set))	{ //create output file, based on the matches in the cr object
-				cout << "Error (idx:0007): failed to create output " << endl;
+				cout << "Error (idx:0007): failed to create output " << '\n';
 				return 1;
 			}
 		}
 		else	{
 			if(!co.create(params,cr,lk.hu_set))	{ //create output file, based on the matches in the cr object
-				cout << "Error (idx:0007): failed to create output " << endl;
+				cout << "Error (idx:0007): failed to create output " << '\n';
 				return 1;
 			}
 		}
 	}
 	catch (...)	{
-		cout << "Error (idx:0027): failed to load create output" << endl;
+		cout << "Error (idx:0027): failed to load create output" << '\n';
 		return 1;
 	}
 	t2 = high_resolution_clock::now(); //end timing output file creation
 	params["output kernel validation"] = co.validation;
 	cout << "  reporting &Delta;T = " << fixed << setprecision(3) 
-				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << endl;
+				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << '\n';
 	strStream.str("");
 	strStream.clear();
 	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
@@ -377,8 +377,8 @@ int main(int argc, char* argv[])	{
 	params["time, completed timestamp"] = strStream.str();
 	// create the .meta file
 	co.dump_meta(params);
-	cout << "\ncompleted: " << strTemp << endl;
-	cout << "... done" << endl;
+	cout << "\ncompleted: " << strTemp << '\n';
+	cout << "... done" << '\n';
 	return 0;
 }
 

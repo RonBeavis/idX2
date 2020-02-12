@@ -145,7 +145,7 @@ bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 				cout.flush();
 			}
 			if(s != 0 and s % 50000 == 0)	{
-				cout << ' ' << s << endl;
+				cout << ' ' << s << '\n';
 				cout.flush();
 			}
 			scan = 0;

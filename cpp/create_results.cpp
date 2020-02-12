@@ -58,7 +58,7 @@ bool create_results::create(map<string, string>& _p, // parameter strings
 			cout.flush();
 		}
 		if (s != 0 and s % 5000 == 0) {
-			cout << " " << s << endl;
+			cout << " " << s << '\n';
 			cout.flush();
 		}
 		ident.clear(); // initialize the temporary identification vector
@@ -198,7 +198,7 @@ bool create_results::create(map<string, string>& _p, // parameter strings
 		z += 1; // increment PSM serial number
 	}
 	// guarantee that the log text output is terminated with a new line and flushed
-	cout << endl;
+	cout << '\n';
 	cout.flush();
 	return true;
 }

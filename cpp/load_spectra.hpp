@@ -107,7 +107,7 @@ public:
 				}
 			}
 		}
-		//make a temporary vector of mass,intensity paris
+		//make a temporary vector of mass,intensity pairs
 		vector<pair<int32_t,int32_t> > pMs;
 		pair<int32_t,int32_t> p(0,0);
 		for(size_t a = 0; a < sMs.size();a++)	{
@@ -183,7 +183,7 @@ public:
 			spairs.insert(spr);
 			spr.first += 1;
 			mis.push_back(p);
-
+			// add z=2 fragment masses as a possibility if appropriate
 			if(pz > 1 and m > 400000 and m < pm_limit)	{
 				pks2++;
 				p.first = (int32_t)(0.5+(double)(m*2-1003)*res);
@@ -218,17 +218,21 @@ public:
 				mis.push_back(p);
 			}
 		}
+		// add 3 to pks if there are +2 peaks recorded and z = 2
+		// add pks2/3 if z > 2
 		if(pks2 > 0 and pz == 2)	{
 			pks += 3;
 		}
 		else if(pks2 > 0 and pz > 2)	{
 			pks += (int32_t)(0.5 + (float)pks2/3.0);
 		}
+		// re-sort pairs by accending fragment mass
 		sort(mis.begin(), mis.end(), 
                		[](const auto& x, const auto& y) { return x.first < y.first; } );
 
 		auto itmis = mis.begin();
 		int32_t erased = 0;
+		// remove any repeated values that may have gotten recorded
 		while(itmis != mis.end())	{
 			if((itmis + 1) != mis.end())	{
 				if(itmis->first == (itmis+1)->first)	{
@@ -274,11 +278,13 @@ public:
 		spectra.erase(spectra.begin()+_max,spectra.end());
 		return;
 	}
+	// recover memory when spectra no longer required
 	void clean_up(void)	{
 		spectra.clear();
+		spectra.shrink_to_fit();
 	}
 	vector<spectrum> spectra; // spectrum information for identifications
-	string validation;
+	string validation; // SHA256 hash of input file
 
 };
 

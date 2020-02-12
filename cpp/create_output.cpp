@@ -219,16 +219,16 @@ bool create_output::create_line(id& _s,double _pm,double _d,double _ppm,double _
 	}
 	oline << fixed << setprecision(2); 
 	if(lns > 0)	{ 
-		oline << (int)(100.0*_s.ri) << "\t"; // fraction of spectrum intensity identified
+		oline << (float)round(100.0*_s.ri)/100.0 << "\t"; // fraction of spectrum intensity identified
 		oline << setprecision(1);
-		oline << log(lns)/2.3 << "\t"; // # of times kernel sequence observed (GPMDB)
-		oline << -0.01*_score << "\t"; // score
+		oline << (float)round(10.0*log(lns)/2.3)/10.0 << "\t"; // # of times kernel sequence observed (GPMDB)
+		oline << (float)round(-0.01*_score*10.0)/10.0 << "\t"; // score
 	}
 	else	{
-		oline << (int)(100.0*_s.ri) << "\t"; // fraction of spectrum intensity identified
+		oline << (float)round(100.0*_s.ri)/100.0 << "\t"; // fraction of spectrum intensity identified
 		oline << setprecision(1);
 		oline << "-" << "\t";// kernel sequence not observed (GPMDB)
-		oline << -0.01*_score << "\t"; // score
+		oline << (float)round(10.0*-0.01*_score)/10.0 << "\t"; // score
 	}
 	//deal with recoding modifications
 	if(_js.HasMember("mods"))	{
@@ -293,16 +293,16 @@ bool create_output::create_line_binary(id& _s,double _pm,double _d,double _ppm,d
 	}
 	oline << fixed << setprecision(2); 
 	if(lns > 0)	{ 
-		oline << (int)(100.0*_s.ri) << "\t"; // fraction of spectrum intensity identified
+		oline << (float)round(100.0*_s.ri)/100.0 << "\t"; // fraction of spectrum intensity identified
 		oline << setprecision(1);
-		oline << log(lns)/2.3 << "\t"; // # of times kernel sequence observed (GPMDB)
-		oline << -0.01*_score << "\t"; // score
+		oline << (float)round(10.0*log(lns)/2.3)/10.0 << "\t"; // # of times kernel sequence observed (GPMDB)
+		oline << (float)round(-0.01*_score*10.0)/10.0 << "\t"; // score
 	}
 	else	{
-		oline << (int)(100.0*_s.ri) << "\t"; // fraction of spectrum intensity identified
+		oline << (float)round(100.0*_s.ri)/100.0 << "\t"; // fraction of spectrum intensity identified
 		oline << setprecision(1);
 		oline << "-" << "\t";// kernel sequence not observed (GPMDB)
-		oline << -0.01*_score << "\t"; // score
+		oline << (float)round(-0.01*_score*10.0)/10.0 << "\t"; // score
 	}
 	//deal with recoding modifications
 	if(!_js.mods.empty())	{
@@ -340,7 +340,7 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 	int32_t jsl = 0;
 	_ifs.read((char *)&jsl,4); // get the number of entries corresponding to a binary JSON object
 	if(_ifs.fail())	{
-		cout << "failed to get json size" << endl;
+		cout << "failed to get json size" << '\n';
 		return false;
 	}
 	int32_t count = 0;
@@ -433,7 +433,7 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 				}
 				break;
 			default: // should never happen
-				cout << "ERROR: bad element value, binary JSON file corrupt" << endl;
+				cout << "ERROR: bad element value, binary JSON file corrupt" << '\n';
 				exit(1);
 		}
 		count++;
@@ -455,7 +455,7 @@ bool create_output::create_binary(map<string,string>& _params,const create_resul
 		return false;
 	}
 	if(!load_mods())	{ //warns if "reports_mods.txt" is not present
-		cout << "Warning (idx:1001): annotation file \"report_mods.txt\" was not present" << endl;
+		cout << "Warning (idx:1001): annotation file \"report_mods.txt\" was not present" << '\n';
 	}
 	int32_t k = 0;
 	//loops through ids and creates some structures to facilitate generating report lines
@@ -507,7 +507,7 @@ bool create_output::create_binary(map<string,string>& _params,const create_resul
 			cout.flush();
 		}
 		if(c != 0 and c % 200000 == 0)	{
-			cout << " " << c << endl;
+			cout << " " << c << '\n';
 			cout.flush();
 		}
 		c++; //increment line count
@@ -589,7 +589,7 @@ bool create_output::create_binary(map<string,string>& _params,const create_resul
 	ifs.close();
 	//open a file stream to output information in odict
 	dump_lines(_params["output file"],total_prob);
-	cout << endl;
+	cout << '\n';
 	cout.flush();
 	return true;
 }
@@ -657,10 +657,10 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	ifs.close();
 	// re-write output file with platform-specific line ending characters
 	ofs.open(_ofile);
-	ofs << temp << endl;
+	ofs << temp << '\n';
 	itS = ostrings.begin();
 	while(itS != ostrings.end())	{
-		ofs << itS->second << endl;
+		ofs << itS->second << '\n';
 		itS++;
 	}
 	ofs.close();
@@ -736,7 +736,7 @@ bool create_output::dump_meta(map<string,string>& _p)	{
 	string mpath = _p["output file"] + ".meta";
 	ofstream mfs;
 	mfs.open(mpath);
-	mfs << "{\"input\" : {" << endl;
+	mfs << "{\"input\" : {" << '\n';
 	auto itp = _p.begin();
 	string first;
 	string second;
@@ -752,13 +752,13 @@ bool create_output::dump_meta(map<string,string>& _p)	{
 		mfs << "\"" << first << "\" : \"" << second << "\"";
 		itp++;
 		if(itp != _p.end())	{
-			mfs << " , " << endl;
+			mfs << " , " << '\n';
 		}
 		else	{
-			mfs << endl;
+			mfs << '\n';
 		}
 	}
-	mfs << "},\n\"data\" : {" << endl; 
+	mfs << "},\n\"data\" : {" << '\n'; 
 	itp = info.begin();
 	while(itp != info.end())	{
 		first = itp->first;
@@ -770,9 +770,9 @@ bool create_output::dump_meta(map<string,string>& _p)	{
 			second.replace(second.find("\\"),1,"/");
 		}
 		mfs << "\"" << first << "\" : \"" << second << "\"";
-		cout << "  " << first << " : " << second << endl;
+		cout << "  " << first << " : " << second << '\n';
 		itp++;
-		mfs << " , " << endl;
+		mfs << " , " << '\n';
 	}
 	mfs << "\"ppms\" : {";
 	auto itppm = ppm_map.begin();
@@ -783,8 +783,8 @@ bool create_output::dump_meta(map<string,string>& _p)	{
 			mfs << ",";
 		}
 	}
-	mfs << "} " << endl;
-	mfs << "}}" << endl;
+	mfs << "} " << '\n';
+	mfs << "}}" << '\n';
 	mfs.close(); 
 	return true;
 }
@@ -796,11 +796,11 @@ bool create_output::create(map<string,string>& _params, const create_results& _c
 	ifstream ifs;
 	ifs.open(_params["kernel file"],std::ifstream::in);
 	if(!ifs.good())	{
-		cout << "Kernel file \"" << _params["kernel file"] << "\" would not open" << endl;
+		cout << "Kernel file \"" << _params["kernel file"] << "\" would not open" << '\n';
 		return false;
 	}
 	if(!load_mods())	{ //warns if "reports_mods.txt" is not present
-		cout << "Warning (idx:1001): annotation file \"report_mods.txt\" was not present" << endl;
+		cout << "Warning (idx:1001): annotation file \"report_mods.txt\" was not present" << '\n';
 	}
 	int32_t k = 0;
 	//loops through ids and creates some structures to facilitate generating report lines
@@ -854,7 +854,7 @@ bool create_output::create(map<string,string>& _params, const create_results& _c
 			cout.flush();
 		}
 		if(c != 0 and c % 200000 == 0)	{
-			cout << " " << c << endl;
+			cout << " " << c << '\n';
 			cout.flush();
 		}
 		memcpy(last,buffer,max_buffer);
@@ -951,7 +951,7 @@ bool create_output::create(map<string,string>& _params, const create_results& _c
 	delete last;
 	//open a file stream to output information in odict
 	dump_lines(_params["output file"],total_prob);
-	cout << endl;
+	cout << '\n';
 	cout.flush();
 	return true;
 }

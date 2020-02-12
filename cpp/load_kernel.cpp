@@ -45,7 +45,7 @@ bool load_kernel::load(void)	{
 	ifstream ifs;
 	ifs.open(kfile,std::ifstream::in);
 	if(!ifs.good())	{
-		cout << "Kernel file \"" << kfile << "\" would not open" << endl;
+		cout << "Kernel file \"" << kfile << "\" would not open" << '\n';
 		return false;
 	}
 	string line;
@@ -80,7 +80,7 @@ bool load_kernel::load(void)	{
 			cout.flush();
 		}
 		if(lines != 0 and lines % 100000 == 0)	{
-			cout << " " << lines << endl;
+			cout << " " << lines << '\n';
 			cout.flush();
 		}
 		lines++;
@@ -158,7 +158,7 @@ bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 	}
 	_ifs.read((char *)(&jsl),4);	// get the number of entries corresponding to a binary JSON object
 	if(_ifs.bad())	{
-		cout << "failed to get json size" << endl;
+		cout << "failed to get json size" << '\n';
 		return false;
 	}
 	int32_t count = 0;
@@ -210,7 +210,7 @@ bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 				_js.pBuffer[tlen] = '\0';
 				break;
 			default: // should never happen
-				cout << "ERROR: bad element value, binary JSON file corrupt" << endl;
+				cout << "ERROR: bad element value, binary JSON file corrupt" << '\n';
 				exit(1);
 		}
 		count++;
@@ -259,7 +259,7 @@ bool load_kernel::load_binary(void)	{
 			cout.flush();
 		}
 		if(lines != 0 and lines % 100000 == 0)	{
-			cout << " " << lines << endl;
+			cout << " " << lines << '\n';
 			cout.flush();
 		}
 		lines++;
