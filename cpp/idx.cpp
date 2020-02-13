@@ -261,6 +261,7 @@ int main(int argc, char* argv[])	{
 	// record times and report process information
 	high_resolution_clock::time_point t2 = high_resolution_clock::now(); //end timing spectrum loading and report
 	cout << '\n' << "  spectra = " << ls.spectra.size() << '\n';
+	cout << "  skipped = " << ls.skipped << '\n';
 	cout << "  spectra &Delta;T = " 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 
 				<< " s" << '\n';
@@ -269,6 +270,10 @@ int main(int argc, char* argv[])	{
 	strStream.clear();
 	strStream << (long)ls.spectra.size();
 	params["spectra"] = strStream.str();
+	strStream.str("");
+	strStream.clear();
+	strStream << (long)ls.spectra.size()+(long)ls.skipped;
+	params["spectra, total"] = strStream.str();
 	strStream.str("");
 	strStream.clear();
 	strStream << duration_cast<milliseconds>(t2 - t1).count()/1000.0;
