@@ -39,7 +39,6 @@ using namespace std;
 typedef std::pair <int32_t, int32_t> sPair; //type used to record (parent,fragment) pairs
 typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragment) pairs
 
-//simplify calling rapidjson methods
 #include "load_kernel.hpp"
 #include "load_spectra.hpp"
 #include "create_results.hpp"
@@ -71,11 +70,18 @@ int32_t create_output::get_cells(double _pm,int32_t _res)	{
 //generates a probability of random assignment for a particular peptide-to-spectrum match
 //using a version of the hypergeometric distribution customized for the experiment situation
 //
-bool create_output::apply_model(int32_t _res,string& _seq,double _pm,int32_t _ions,int32_t _lspectrum,double& pscore,double& p){
+bool create_output::apply_model(int32_t _res, // fragent ion mass resolution in mDa
+				string& _seq, // best match peptide sequence
+				double _pm, // peptide mass
+				int32_t _ions, // # of ions identified
+				int32_t _lspectrum, // # of ions in spectrum being identified
+				double& pscore, // score to be returned
+				double& p)	{ // probability to be returned
 	p = 0.0001; //initialize output value
 	pscore = 400; //initialize output value
 	int32_t sfactor = 20;
 	int32_t sadjust = 3;
+	// make adjustments based on mass resolution
 	if(_res > 100)	{
 		sfactor = 40;
 	}
@@ -85,6 +91,7 @@ bool create_output::apply_model(int32_t _res,string& _seq,double _pm,int32_t _io
 	else if(fragmentation == "cid")	{
 		sfactor = 40;
 	}
+	// calculate parameters for hypergeometric model
 	int32_t cells = get_cells(_pm,_res);
 	int32_t total_ions = 2*(int32_t)(_seq.size() - 1);
 	if(total_ions > sfactor)	{
@@ -97,8 +104,11 @@ bool create_output::apply_model(int32_t _res,string& _seq,double _pm,int32_t _io
 	if(_ions >= sc)	{
 		sc = _ions + 2;
 	}
+	// initialize the hypergeometric model calculation object
 	hypergeom hp(sc,total_ions,cells);
+	// retrieve the probability, based on the hypergeometric model
 	p = hp.pdf(_ions);
+	// convert probability into a score
 	pscore = -100.0*log(p)/2.3;
 	return true;
 }
@@ -108,6 +118,10 @@ bool create_output::apply_model(int32_t _res,string& _seq,double _pm,int32_t _io
 //
 bool create_output::load_mods(void)	{
 	ifstream istr;
+	// note: report_mods.txt should be in the cwd that idx is run from
+	// if this is a problem for your installation, you may want to
+	// either add it to the parameter strings object or
+	// change the path used here
 	istr.open("report_mods.txt");
 	if(istr.fail())	{
 		return false;
@@ -132,10 +146,12 @@ bool create_output::load_mods(void)	{
 bool create_output::find_window(void)	{
 	map<int32_t,int32_t> vs;
 	int32_t i = 0;
+	// initialize a histogram between 20 ppm to -20 ppm
 	for(i = -21; i < 22; i++)	{
 		vs[i] = 0;
 	}
 	auto it = ppms.begin();
+	// iterate through ids to populate the histogram
 	while(it != ppms.end())	{
 		i = roundf(*it);
 		if(i >= -21 and i <= 21)	{
@@ -146,6 +162,7 @@ bool create_output::find_window(void)	{
 	ppm_map.clear();
 	int32_t max = 0;
 	int32_t center = -21;
+	// put the histogram into map form
 	for(i = -20; i < 21;i++)	{
 		if(vs[i] > max)	{
 			max = vs[i];
@@ -153,6 +170,8 @@ bool create_output::find_window(void)	{
 		}
 		ppm_map[i] = vs[i];
 	}
+	// bail out if there aren't enough ids
+	// and use a +/- 10 ppm window
 	if(max < 100)	{
 		low = center - 10;
 		high = center + 10;
@@ -160,6 +179,8 @@ bool create_output::find_window(void)	{
 		if(high > 21)	high = 21;
 		return true;
 	}
+	// bail out if there aren't enough ids
+	// and set no window
 	else if(max < 20)	{
 		low = -21;
 		high = 21;
@@ -167,6 +188,7 @@ bool create_output::find_window(void)	{
 	}
 	double ic = (double)max;
 	int32_t l = -20;
+	// find the lower edge of the histogram (1%)
 	for(i = center;i >= -20 ; i--)	{
 		if(vs[i]/ic < 0.01)	{
 			l = i;
@@ -174,6 +196,7 @@ bool create_output::find_window(void)	{
 		}
 	}
 	int32_t h = 20;
+	// find the upper edge of the histogram (1%)
 	for(i = center; i <= 20 ; i++)	{
 		if(vs[i]/ic < 0.01)	{
 			h = i;
@@ -188,7 +211,14 @@ bool create_output::find_window(void)	{
 // creates a single line of TSV formatted output
 // change this method if you want to alter the output format
 //
-bool create_output::create_line(id& _s,double _pm,double _d,double _ppm,double _score,rapidjson::Document& _js,int32_t _u,string& _line)	{
+bool create_output::create_line(id& _s, // an id object
+				double _pm, // parent mass
+				double _d, // assigned mass error (mDa)
+				double _ppm, // assigned mass error (ppm)
+				double _score, // assigned id score
+				rapidjson::Document& _js, // kernel object
+				int32_t _u, // unique id of kernel
+				string& _line)	{ // output line
 	ostringstream oline;
 	oline << _s.sc << "\t"; // spectrum scan number
 	//write TSV string
@@ -263,7 +293,14 @@ bool create_output::create_line(id& _s,double _pm,double _d,double _ppm,double _
 // creates a single line of TSV formatted output
 // change this method if you want to alter the output format
 //
-bool create_output::create_line_binary(id& _s,double _pm,double _d,double _ppm,double _score,osObject& _js,int32_t _u,string& _line)	{
+bool create_output::create_line_binary(id& _s, // an id object
+					double _pm, // parent mass
+					double _d, // assigned mass error (mDa)
+					double _ppm, // assigned mass error (ppm)
+					double _score, // assigned id score
+					osObject& _js, // kernel binary JSON object
+					int32_t _u, // unique id of kernel
+					string& _line)	{ // output line
 	ostringstream oline;
 	oline << _s.sc << "\t"; // spectrum scan number
 	//write TSV string
@@ -448,7 +485,9 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 //
 //creates an output file, as specified in _params for a binary JSON kernel file
 //
-bool create_output::create_binary(map<string,string>& _params,const create_results& _cr,map<int32_t, set<int32_t> >& _hu)	{
+bool create_output::create_binary(map<string,string>& _params,
+				const create_results& _cr,
+				map<int32_t, set<int32_t> >& _hu)	{
 	spectrum_count = atoi(_params["spectra"].c_str());
 	ifstream ifs(_params["kernel file"],ios::in | ios::binary);
 	if(ifs.fail())	{
@@ -791,7 +830,9 @@ bool create_output::dump_meta(map<string,string>& _p)	{
 //
 //creates an output file, as specified in _params for a JSON kernel
 //
-bool create_output::create(map<string,string>& _params, const create_results& _cr, map<int32_t, set<int32_t> >& _hu)	{
+bool create_output::create(map<string,string>& _params, 
+				const create_results& _cr, 
+				map<int32_t, set<int32_t> >& _hu)	{
 	spectrum_count = atoi(_params["spectra"].c_str());
 	ifstream ifs;
 	ifs.open(_params["kernel file"],std::ifstream::in);
