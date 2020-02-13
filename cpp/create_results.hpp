@@ -32,6 +32,7 @@ public:
 	int32_t pz; //parent ion charge
 	int32_t sc; //scan number
 	int32_t ions; //number of fragment ions in the spectrum
+	//copy operator
 	id& operator=(const id &rhs)	{
 		sn = rhs.sn;
 		peaks = rhs.peaks;
@@ -59,6 +60,7 @@ public:
 	bool create(map<string,string>& _p,
 			const load_spectra& _l,
 			load_kernel& _k);
+	// get size of ids vector
 	inline int32_t size(void) { return (int32_t)ids.size(); }
 	
 	vector<id> ids; //identification information

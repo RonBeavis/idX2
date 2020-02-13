@@ -23,13 +23,15 @@ public:
 	int32_t pos; //residue position in protein coordinates
 	string res; //the single character abbreviation for the genome-encoded residue at pos
 	int32_t mass; //the mass change associated with the PTM
-	mod& operator=(const mod &rhs)	{ //copy operator
+	//copy operator
+	mod& operator=(const mod &rhs)	{ 
 		res = rhs.res;
 		pos = rhs.pos;
 		mass = rhs.mass;
 		return *this;
 	}
-	bool operator<( const mod& rhs ) const { //less than operator, used for formating output
+	//less than operator, used for formating output
+	bool operator<( const mod& rhs ) const { 
 		return pos < rhs.pos; 
 	}
 };
@@ -124,10 +126,11 @@ public:
 		validation = "";
 	}
 	virtual ~create_output(void) {}
-	// generates a TSV formated output file from results using a JSON kernel
+	// generates a TSV formatted output file from results using a JSON kernel
 	bool create(map<string,string>& _p,const create_results& _cr, map<int32_t, set<int32_t> >& _hu);
-	// generates a TSV formated output file from results using a JSON binary kernel
+	// generates a TSV formatted output file from results using a JSON binary kernel
 	bool create_binary(map<string,string>& _p,const create_results& _cr, map<int32_t, set<int32_t> >& _hu);
+	// generate a JSON formatted output file containing metadata about the analysis
 	bool dump_meta(map<string,string>& _p);
 	string validation; // SHA256 hash value for the output file
 	inline int32_t roundf(const double _x)	{  // for rounding compatibility
@@ -135,18 +138,24 @@ public:
 		return (int32_t)(_x + 0.5);
 	}
 private:
-	bool load_mods(void); //loads a map with strings associated with particular modification masses
-	bool find_window(void); //determines a valid window for results, in parent mass ppm
-	int32_t get_cells(double _pm,int32_t _res); //retrieves one of the parameters necessary for a hypergeometric model
+	//loads a map with strings associated with particular modification masses
+	bool load_mods(void);
+	//determines a valid window for results, in parent mass ppm
+	bool find_window(void);
+	//retrieves one of the parameters necessary for a hypergeometric model
+	int32_t get_cells(double _pm,int32_t _res); 
 	//calculates a probability model for a particular identification
 	bool apply_model(int32_t _r,string& _s,double _pm,int32_t _ions,int32_t _lspectrum,double& pscore,double& p);
 	//generates a single line of text for TSV file output from JSON kernels
 	bool create_line(id& _s, double _pm, double _d, double _ppm, double _score, Document& _js, int32_t _u, string& _line);
 	//generates a single line of text for TSV file output from JSON binary kernels
 	bool create_line_binary(id& _s, double _pm, double _d, double _ppm, double _score, osObject& _js, int32_t _u, string& _line);
-	bool create_header_line(string& _h); // generates a TSV formated header line for output
-	bool get_next(ifstream& ifs,osObject& _os); // gets the next osObject from a JSON binary file
-	bool dump_lines(string& _ofile,double _tp); // serializes odict lines into a file
+	// generates a TSV formated header line for output
+	bool create_header_line(string& _h);
+	// gets the next osObject from a JSON binary file
+	bool get_next(ifstream& ifs,osObject& _os); 
+	// serializes odict lines into a file
+	bool dump_lines(string& _ofile,double _tp); 
 	int32_t low; // lower value for the ppm window calculated in find_window
 	int32_t high; // upper value for the ppm window calculated in find_window
 	int32_t spectrum_count; // number of spectra

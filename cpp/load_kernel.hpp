@@ -40,6 +40,7 @@ public:
 	char *pKey; // buffer to store the key value of a binary JSON element
 	unsigned char *pBuffer; // buffer to read a binary JSON object
 	string key; // key value for a binary JSON element
+	// reset object to initial state, leaving pBuffer and pKey unchanged
 	void reset(void)	{
 		pm = 0;
 		u = 0;
@@ -118,9 +119,13 @@ public:
 	virtual ~load_kernel(void) {}
 	//load uses spectrum information and the kernel file specified in _p
 	//to retrieve information about candidate kernels that will be used in the peptide-sequence matching process
-	bool load(void); // load from a text JSON file
-	bool load_binary(void); // load from a binary JSON file
-	bool get_next(ifstream& _ifs,jsObject& _js); //retrieve the next JSON object from a binary stream
+
+	// load from a text JSON file
+	bool load(void);
+	// load from a binary JSON file
+	bool load_binary(void);
+	//retrieve the next JSON object from a binary stream
+	bool get_next(ifstream& _ifs,jsObject& _js); 
 	string kfile; //path to the kernel file
 	double fragment_tolerance; //fragment mass tolerance in mDa
 	kernels kerns; //object that will contain kernel information

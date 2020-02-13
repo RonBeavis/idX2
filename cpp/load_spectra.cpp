@@ -22,42 +22,37 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "load_kernel.hpp"
 #include "load_spectra.hpp"
 
-load_spectra::load_spectra(void)	{
-	validation = "";
-}
-
-load_spectra::~load_spectra(void)	{
-}
-
 //
 //	loads spectra using the MGF file specified in _params
 //
 
 bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
+	// open the spectrum file
 	ifstream istr;
 	istr.open(_params["spectrum file"]); // opens input file stream
-	int32_t res = (int32_t)atoi(_params["fragment tolerance"].c_str());
-	if(istr.fail())	{
+	if(istr.fail())	{ // bail on fail
 		return false;
 	}
+	// set up parameters and temporary values
+	int32_t res = (int32_t)atoi(_params["fragment tolerance"].c_str());
 	double pt = atoi(_params["parent tolerance"].c_str());
-	size_t len = 1024;
-	size_t size = 0;
+	size_t len = 1024*4; // maximum line length
+	size_t size = 0;  // size of current line
 	char *line = new char[len]; //char buffer used to read file
-	string temp = "";
+	string temp = ""; // temporary string object
 	string desc = ""; //description information (if available)
-	char *pos = NULL;
+	char *pos = NULL; // char pointer for parsing
 	size_t equals = 0;
 	double parent = 0.0; //parent mass
 	double charge = 1.0; //parent charge
 	string run_time = ""; //chromatographic retention time information (if available)
-	vector<double> masses;
-	vector<double> intensities;
-	spectrum sp;
+	vector<double> masses; // vector of fragment masses
+	vector<double> intensities; // vector of fragment intensities
+	spectrum sp; // spectrum object
 	const double proton = 1.007276; //constant used to recalculate neutral masses
 	int32_t scan = 0; //scan number of the spectrum
-	int32_t s = 1;
-	double rt = 0.0;
+	int32_t s = 1; // spectrum cound
+	double rt = 0.0; // run time (seconds)
 	// process the file, one line at a time
 	while(istr.good() && !istr.eof())	{
 		istr.getline(line,len-1,'\n');
@@ -99,13 +94,14 @@ bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 		else if(temp.find("END IONS") != temp.npos)	{ //tag for the end of a spectrum
 			//carry out calculations and type conversions
 			sp.clear();
+			// skip spectrum if the parent ion mass <= 600 Da
 			if(parent*charge > 600.0)	{
-				sp.pm = (int32_t)(0.5 + 1000*(parent*charge - proton*charge));
-				sp.pz = (int32_t)charge;
-				sp.pi = 100;
-				sp.pt = pt;
-				sp.desc = desc;
-				sp.rt = rt;
+				sp.pm = (int32_t)(0.5 + 1000*(parent*charge - proton*charge)); // convert to mDa
+				sp.pz = (int32_t)charge; // record charge
+				sp.pi = 100; // parent intensity
+				sp.pt = pt; // record parent tolerance
+				sp.desc = desc; // record spectrum description
+				sp.rt = rt; // record retention time
 				//substitute ordinal value for scan number, if no scan available
 				if(scan == 0)	{
 					sp.sc = s;
@@ -126,11 +122,19 @@ bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 					sp.mis.push_back(p);
 					i++;
 				}
+				// clean up spectrum pairs for later use
 				sp.condition(res,50);
+				// add information to _lk
 				_lk.sp_set.insert(sp.pm);
 				_lk.spairs.insert(sp.spairs.begin(),sp.spairs.end());
+				// remove pair information
 				sp.spairs.clear();
+				// record spectrum info spectra vector
 				spectra.push_back(sp);
+			}
+			else	{
+				// track number of spectra that didn't pass mass test
+				skipped++;
 			}
 			//clean up to be ready for the next spectrum
 			desc = "";
@@ -139,7 +143,7 @@ bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 			parent = 0.0;
 			charge = 0.0;
 			s++;
-			//output keep-alive text for logging
+			//output progress text for logging
 			if(s % 2500 == 0)	{
 				cout << '.';
 				cout.flush();
@@ -153,8 +157,10 @@ bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 	}
 	cout << "\n";
 	cout.flush();
-	delete[] line;
+	delete line;
 	istr.close();
+	//calculate a SHA256 hash value for the spectrum file
+	//for validation use
 	std::ifstream ifile(_params["spectrum file"], std::ios::binary);
 	std::vector<unsigned char> sfile(picosha2::k_digest_size);
 	picosha2::hash256(ifile, sfile.begin(), sfile.end());

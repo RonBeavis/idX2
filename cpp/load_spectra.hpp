@@ -18,8 +18,17 @@ correspond to neutral molecules and are recorded in millidaltons.
 class spectrum
 {
 public:
-	spectrum(void)	{pm = 0;pi=0;pz=0;sc=0;pt=0.0;rt=0.0;}
-	virtual ~spectrum(void)	{ clear(); }
+	spectrum(void)	{
+		pm = 0;
+		pi=0;
+		pz=0;
+		sc=0;
+		pt=0.0;
+		rt=0.0;
+	}
+	virtual ~spectrum(void)	{
+		clear(); 
+	}
 	int32_t pm; //parent mass
 	int32_t pi; //parent intensity
 	int32_t pz; //parent charge
@@ -31,8 +40,20 @@ public:
 	vector<pair<int32_t,int32_t>> mis; //fragment mass/intensity pairs
 	phmap::flat_hash_set<sPair> spairs; //index of (parent,fragment) masses 
 	string desc;//description of spectrum
-	bool clear()	{sc = 0;pm = 0; pi = 0; pz = 0; sc=0; desc = ""; mis.clear();spairs.clear();return true;}
-	spectrum& operator=(const spectrum &rhs)	{ //copy operator
+	// reset object to its inital state
+	bool clear()	{
+		sc = 0;
+		pm = 0; 
+		pi = 0; 
+		pz = 0; 
+		sc=0; 
+		desc = ""; 
+		mis.clear();
+		spairs.clear();
+		return true;
+	}
+	//copy operator
+	spectrum& operator=(const spectrum &rhs)	{ 
 		mis.clear();
 		pm = rhs.pm;
 		pi = rhs.pi;
@@ -258,19 +279,23 @@ public:
 	}
 };
 
+//
+// load_spectra takes a spectrum file path, reads the spectra and stores the relevant information
+// in a vector of spectrum objects
+//
 class load_spectra
 {
 public:
-	load_spectra(void);
-	virtual ~load_spectra(void);
-//
-//	load spectra using the information in _p
-//
+	load_spectra(void)	{
+		validation = "";
+		skipped = 0;
+	}
+	virtual ~load_spectra(void) {}
+
+	// load spectra using the information in _p
 	bool load(map<string,string>& _p,load_kernel& _lk);
-//
-//	enforces the maximum number of spectra to use by truncating
-//	the spectra vector
-//
+	// enforces the maximum number of spectra to use by truncating
+	// the spectra vector
 	void set_max(const int32_t _max)	{
 		if(spectra.size() <= (size_t)_max)	{
 			return;
@@ -285,7 +310,7 @@ public:
 	}
 	vector<spectrum> spectra; // spectrum information for identifications
 	string validation; // SHA256 hash of input file
-
+	int32_t skipped;
 };
 
 
