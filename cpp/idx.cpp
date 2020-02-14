@@ -67,6 +67,14 @@ variables. When floating point masses are converted to integers, the following m
 	int32_t im = (int32_t)(0.5+dm*1000.0); //integer mass in millidaltons
 
 */
+/*
+The text output to cout is meant to serve as logging information for the process. The
+suggested use for this text is to redirect it to files on the command line, something like:
+
+>idx ... 1>session.log 2>error.log
+
+*/
+
 #include "pch.h"
 
 #include <iostream>
@@ -90,7 +98,7 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "load_spectra.hpp" //defines the load_spectra object
 #include "create_results.hpp" //defines the create_results object
 #include "create_output.hpp" //defines the create_output object
-#ifdef MSVC
+#ifdef MSVC //define MSVC if you are compiling with Visual Studio
 	#define _TIMESPEC_DEFINED
 #endif
 
@@ -202,12 +210,8 @@ int main(int argc, char* argv[])	{
 	strStream << std::ctime(&end_time);
 	string strTemp = strStream.str();
 	// deal with annoying trailing whitespace
-	while(strTemp.find('\r') != strTemp.npos)	{
-		strTemp.erase(strTemp.find('\r'));
-	}
-	while(strTemp.find('\n') != strTemp.npos)	{
-		strTemp.erase(strTemp.find('\n'));
-	}
+	strTemp.erase(std::remove(strTemp.begin(), strTemp.end(), '\n'), strTemp.end());
+	strTemp.erase(std::remove(strTemp.begin(), strTemp.end(), '\r'), strTemp.end());
 	cout << "start time: " << strTemp << '\n';
 	params["time, started"] = strTemp;
 	// record the epoch timestamp too
@@ -216,8 +220,8 @@ int main(int argc, char* argv[])	{
 	strStream << fixed << setprecision(3);
 	strStream << std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count()/1000.0;
 	params["time, started timestamp"] = strStream.str();
-
-	cout << "idX parameters" << "\n"; //output the interpreted command line values for logging
+	//output the interpreted command line values for logging
+	cout << "idX parameters" << "\n"; 
 	if(maximum_spectra != -1)	{
 		cout << "\t   max spectra: " << maximum_spectra << '\n';
 	}
@@ -283,10 +287,10 @@ int main(int argc, char* argv[])	{
 	cout.flush();
 	try	{
 		if (isB) {
-			lk.load_binary();
+			lk.load_binary(); // load the binary JSON kernel
 		}
 		else {
-			lk.load();
+			lk.load(); // load the JSON kerenl
 		}
 	}
 	catch (...)	{
@@ -351,6 +355,7 @@ int main(int argc, char* argv[])	{
 		return 1;
 	}
 	t2 = high_resolution_clock::now(); //end timing output file creation
+	// record additional parameters for the .meta file
 	params["output kernel validation"] = co.validation;
 	cout << "  reporting &Delta;T = " << fixed << setprecision(3) 
 				<< duration_cast<milliseconds>(t2 - t1).count()/1000.0 << " s" << '\n';
@@ -368,13 +373,11 @@ int main(int argc, char* argv[])	{
     	end_time = std::chrono::system_clock::to_time_t(now);
 	strStream << std::ctime(&end_time);
 	strTemp = strStream.str();
-	while(strTemp.find('\r') != strTemp.npos)	{
-		strTemp.erase(strTemp.find('\r'));
-	}
-	while(strTemp.find('\n') != strTemp.npos)	{
-		strTemp.erase(strTemp.find('\n'));
-	}
+	// deal with annoying trailing whitespace
+	strTemp.erase(std::remove(strTemp.begin(), strTemp.end(), '\n'), strTemp.end());
+	strTemp.erase(std::remove(strTemp.begin(), strTemp.end(), '\r'), strTemp.end());
 	params["time, completed"] = strTemp;
+	// record the epoch time too
 	strStream.str("");
 	strStream.clear();
 	strStream << fixed << setprecision(3);
