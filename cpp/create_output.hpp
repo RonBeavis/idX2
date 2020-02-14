@@ -8,9 +8,9 @@
 
 #include "rapidjson/document.h"
 using namespace rapidjson;
-//
+
 // object to retain information about a single peptide modfication
-//
+
 class mod
 {
 public:
@@ -35,9 +35,9 @@ public:
 		return pos < rhs.pos; 
 	}
 };
-//
+
 // object to contain information from a single binary JSON object
-//
+
 class osObject
 {
 public:
@@ -79,9 +79,9 @@ public:
 		lb.clear();
 	}
 };
-//
+
 // returns hypergeometic distribution PDF based on input parameters
-//
+
 class hypergeom	{
 public:
 	// specify hypergeometric distribution parameters
@@ -111,10 +111,10 @@ public:
 		return (n*log(n) - n + log(sqrt(2*pi*n)));
 	}
 };
-//
-//create_output takes peptide-to-spectrum matches and generates a tab-separated value output
-//file describing those identifications.
-//
+
+// create_output takes peptide-to-spectrum matches and generates a tab-separated value output
+// file describing those identifications.
+
 class create_output
 {
 public:
@@ -131,7 +131,7 @@ public:
 	// generates a TSV formatted output file from results using a JSON binary kernel
 	bool create_binary(map<string,string>& _p,const create_results& _cr, map<int32_t, set<int32_t> >& _hu);
 	// generate a JSON formatted output file containing metadata about the analysis
-	bool dump_meta(map<string,string>& _p);
+	bool dump_meta(const map<string,string>& _p);
 	string validation; // SHA256 hash value for the output file
 	inline int32_t roundf(const double _x)	{  // for rounding compatibility
 		if(_x < 0.0) return (int32_t)(_x - 0.5);
@@ -160,9 +160,9 @@ private:
 	int32_t high; // upper value for the ppm window calculated in find_window
 	int32_t spectrum_count; // number of spectra
 	map<int32_t,id> sv; // records id values
-	map<int32_t,set<int32_t> > sdict; // records id values in a map
+	map<int32_t,set<int32_t>> sdict; // records id values in a map
 	map<int32_t,string> mt; // modification strings
-	map<int32_t,vector<string> > odict; // output line map
+	map<int32_t,vector<string>> odict; // output line map
 	vector<int32_t> ppms; // ppm values for spectrum parent masses
 	map<string,string> info; // information stored in text strings
 	map<int32_t,int32_t> ppm_map; // ppm values for spectrum parent masses
@@ -193,8 +193,8 @@ private:
 		derr *= _n/_t;
 		return derr;
 	}
-	//loads a structure with the number of cells available for a hypergeometic model, based one
-	//parent mass and fragment mass tolerance, either 20, 50 or 400 mDa.
+	// loads a structure with the number of cells available for a hypergeometic model, based one
+	// parent mass and fragment mass tolerance, either 20, 50 or 400 mDa.
 	bool load_distribution(void)	{
 		distribution.clear();
 		vector<double> v = {1.3,1.0,0.6};

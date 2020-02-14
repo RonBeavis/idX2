@@ -12,14 +12,8 @@
 #include <deque>
 using namespace rapidjson; //namespace for the rapidjson methods
 
-/*
-kernels is a class that stores the indexes derived from
-reading the kernel file with load_kernel. kindex
-is the primary record of information. mvindex records the
-parent ion masses that have at least one entry in kindex.
-*/
-
 // object to store kernel information from a binary JSON file object
+
 class jsObject
 {
 public:
@@ -30,7 +24,10 @@ public:
 		pBuffer = new unsigned char[1024*16-1];
 		pKey = new char[256];
 	}
-	virtual ~jsObject(void)	{delete pKey;delete pBuffer;}
+	virtual ~jsObject(void)	{
+		delete pKey;
+		delete pBuffer;
+	}
 	int32_t pm; // parent mass
 	int32_t u; // uid for kernel
 	int32_t h; // uid for first instance of a specifically modified peptide sequence
@@ -50,6 +47,8 @@ public:
 	}
 };
 
+// object stores information about a parent ion mass channel
+
 class channel
 {
 public:
@@ -66,19 +65,24 @@ public:
 	int32_t mv; // reduced parent mass value of a channel
 };
 
+// kernels is a class that stores the indexes derived from
+// reading the kernel file with load_kernel. kindex
+// is the primary record of information. mvindex records the
+// parent ion masses that have at least one entry in kindex.
+
 class kernels
 {
 public:
 	kernels(void)	{ 
 		clength = 3;
 		for(size_t a = 0; a < clength; a++)	{
-			kindex_a.push_back(phmap::flat_hash_map<kPair,vector<int32_t> >());
+			kindex_a.push_back(phmap::flat_hash_map<kPair,vector<int32_t>>());
 			mvindex_a.push_back(phmap::flat_hash_set<int32_t>());
 		}
 	}
 	virtual ~kernels(void)	{}
-	vector<phmap::flat_hash_map<kPair,vector<int32_t> > > kindex_a; //records the kernels containing the specified pair 
-	vector<phmap::flat_hash_set<int32_t> > mvindex_a; //set of parent masses with at least one entry in kindex 
+	vector<phmap::flat_hash_map<kPair,vector<int32_t>>> kindex_a; //records the kernels containing the specified pair 
+	vector<phmap::flat_hash_set<int32_t>> mvindex_a; //set of parent masses with at least one entry in kindex 
 	size_t clength; // number of mass channels (a constant)
 	// retrieve the number of values in kindex_a
 	int32_t size(void)	{
@@ -90,10 +94,8 @@ public:
 	}
 };
 
-/*
-load_kernel is a specialty class that loads kernels into memory from
-a file that was specified on the command line. 
-*/
+// load_kernel is a specialty class that loads kernels into memory from
+// a file that was specified on the command line. 
 
 class load_kernel
 {

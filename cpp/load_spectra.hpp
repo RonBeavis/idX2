@@ -6,12 +6,6 @@
 #
 */
 
-/*
-load_spectra is a specialty class for taking a file in MGF format and
-creating a vector of spectrum objects containing the information
-relevant for the purposes of the idX algorithm. All masses recorded
-correspond to neutral molecules and are recorded in millidaltons.
-*/
 #include <algorithm>
 #include <cmath>
 
@@ -74,9 +68,11 @@ public:
 		spairs.insert(rhs.spairs.begin(),rhs.spairs.end());
 		return *this;
 	}
-	//condition() converts the information in the MGF file into the data types and indexes
-	//used by idX. _ires is the fragment ion mass tolerance and _l is the maximum number
-	//of fragment ions that may be considered.
+
+	// condition converts the information in the MGF file into the data types and indexes
+	// used by idX. _ires is the fragment ion mass tolerance and _l is the maximum number
+	// of fragment ions that may be considered.
+
 	bool condition(const int32_t _ires, const int32_t _l)	{
 		double i_max = 0.0;
 		const double res = 1.0/(double)_ires;
@@ -154,10 +150,7 @@ public:
 		//re-sort the temporary vector by mass
 		sort(pMs.begin(), pMs.end(), 
                		[](const auto& x, const auto& y) { return x.first < y.first; } );
-
-//
-//		generate a normalized set of spectrum masses
-//
+		//generate a normalized set of spectrum masses
 		isum = 0;
 		mis.clear();
 		sPair spr;
@@ -279,10 +272,9 @@ public:
 	}
 };
 
-//
 // load_spectra takes a spectrum file path, reads the spectra and stores the relevant information
 // in a vector of spectrum objects
-//
+
 class load_spectra
 {
 public:

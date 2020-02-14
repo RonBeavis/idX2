@@ -44,11 +44,10 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "create_results.hpp"
 #include "create_output.hpp"
 
-//
-//calculates the number of cells to use in the hypergeometric distribution
-//used to model a result, based on the parent mass and fragment mass tolerance
-//using the information in the class member map distribution.
-//
+//  calculates the number of cells to use in the hypergeometric distribution
+//  used to model a result, based on the parent mass and fragment mass tolerance
+//  using the information in the class member map distribution.
+
 int32_t create_output::get_cells(double _pm,int32_t _res)	{
 	int32_t pm = 100*(int32_t)(_pm/100000);
 	int32_t r = 2;
@@ -66,10 +65,10 @@ int32_t create_output::get_cells(double _pm,int32_t _res)	{
 	}
 	return (int32_t)(pm*distribution[pm][r]);
 }
-//
-//generates a probability of random assignment for a particular peptide-to-spectrum match
-//using a version of the hypergeometric distribution customized for the experiment situation
-//
+
+// generates a probability of random assignment for a particular peptide-to-spectrum match
+// using a version of the hypergeometric distribution customized for the experiment situation
+
 bool create_output::apply_model(int32_t _res, // fragent ion mass resolution in mDa
 				string& _seq, // best match peptide sequence
 				double _pm, // peptide mass
@@ -112,10 +111,10 @@ bool create_output::apply_model(int32_t _res, // fragent ion mass resolution in 
 	pscore = -100.0*log(p)/2.3;
 	return true;
 }
-//
-//load_mods uses the information stored in "report_mods.txt" to create
-//user-friendly strings in place of modification masses
-//
+
+// load_mods uses the information stored in "report_mods.txt" to create
+// user-friendly strings in place of modification masses
+
 bool create_output::load_mods(void)	{
 	ifstream istr;
 	// note: report_mods.txt should be in the cwd that idx is run from
@@ -135,14 +134,14 @@ bool create_output::load_mods(void)	{
 	istr.close();
 	return true;
 }
-//
-//finds a window (in parent mass ppm) to exclude identifications that
-//are outside of the main distribution of results. This window is
-//found by creating a histogram of parent mass differences from the assigned
-//peptide sequence. The largest bin in the histogram is then located and
-//the lower and upper ppm values at which the histogram has dropped below 1% of the largest bin
-//is determined.
-//
+
+//  finds a window (in parent mass ppm) to exclude identifications that
+//  are outside of the main distribution of results. This window is
+//  found by creating a histogram of parent mass differences from the assigned
+//  peptide sequence. The largest bin in the histogram is then located and
+//  the lower and upper ppm values at which the histogram has dropped below 1% of the largest bin
+//  is determined.
+
 bool create_output::find_window(void)	{
 	map<int32_t,int32_t> vs;
 	int32_t i = 0;
@@ -207,10 +206,10 @@ bool create_output::find_window(void)	{
 	high = h;
 	return true;
 }
-//
+
 // creates a single line of TSV formatted output
 // change this method if you want to alter the output format
-//
+
 bool create_output::create_line(id& _s, // an id object
 				double _pm, // parent mass
 				double _d, // assigned mass error (mDa)
@@ -289,10 +288,10 @@ bool create_output::create_line(id& _s, // an id object
 	_line = oline.str();
 	return true;
 }
-//
+
 // creates a single line of TSV formatted output
 // change this method if you want to alter the output format
-//
+
 bool create_output::create_line_binary(id& _s, // an id object
 					double _pm, // parent mass
 					double _d, // assigned mass error (mDa)
@@ -359,18 +358,18 @@ bool create_output::create_line_binary(id& _s, // an id object
 	_line = oline.str();
 	return true;
 }
-//
+
 // create the header line for the output TSV
 // be sure to align this with the results of create_line
-//
+
 bool create_output::create_header_line(string& _h)	{
 	_h = "Id\tSub\tScan\tRT(s)\tPeptide mass\tDelta\tppm\tz\tProtein acc\t";
 	_h += "Start\tEnd\tPre\tSequence\tPost\tIC\tRI\tlog(f)\tlog(p)\tModifications\tKernel";
 	return true;
 }
-//
+
 // gets the next kernel from a binary formatted JSON file with an open ifstream
-//
+
 bool create_output::get_next(ifstream& _ifs,osObject& _js)
 {
 	_js.reset();
@@ -482,14 +481,13 @@ bool create_output::get_next(ifstream& _ifs,osObject& _js)
 	return true;
 }
 
-//
 //creates an output file, as specified in _params for a binary JSON kernel file
-//
+
 bool create_output::create_binary(map<string,string>& _params,
 				const create_results& _cr,
 				map<int32_t, set<int32_t> >& _hu)	{
-	spectrum_count = atoi(_params["spectra"].c_str());
-	ifstream ifs(_params["kernel file"],ios::in | ios::binary);
+	spectrum_count = atoi(_params.find("spectra")->second.c_str());
+	ifstream ifs(_params.find("kernel file")->second,ios::in | ios::binary);
 	if(ifs.fail())	{
 		return false;
 	}
@@ -520,7 +518,7 @@ bool create_output::create_binary(map<string,string>& _params,
 		itsd++;
 	}
 	//initialize variables
-	int32_t res = atoi(_params["fragment tolerance"].c_str());
+	int32_t res = atoi(_params.find("fragment tolerance")->second.c_str());
 	int32_t inferred = 0;
 	double score_min = 200.0;
 	double total_prob = 0.0; //sum of all assigned probabilities
@@ -627,14 +625,14 @@ bool create_output::create_binary(map<string,string>& _params,
 	}
 	ifs.close();
 	//open a file stream to output information in odict
-	dump_lines(_params["output file"],total_prob);
+	dump_lines(_params.find("output file")->second,total_prob);
 	cout << '\n';
 	cout.flush();
 	return true;
 }
-//
+
 // Serializes the formulated lines to a specified output file
-//
+
 bool create_output::dump_lines(string& _ofile,double _tp)	{
 	//determine parent mass delta ppm acceptance window
 	string temp;
@@ -767,18 +765,20 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	info["parent ion tolerance"] = str;
 	return true;
 }
-//
+
 // creates a file containing information about the PSM identification process
 // as well as file validation records
-//
-bool create_output::dump_meta(map<string,string>& _p)	{
-	string mpath = _p["output file"] + ".meta";
+
+bool create_output::dump_meta(const map<string,string>& _p)	{
+	auto itp = _p.find("output file");
+	string mpath = itp->second;
+	mpath += ".meta";
 	ofstream mfs;
 	mfs.open(mpath);
 	mfs << "{\"input\" : {" << '\n';
-	auto itp = _p.begin();
 	string first;
 	string second;
+	itp = _p.begin();
 	while(itp != _p.end())	{
 		first = itp->first;
 		second = itp->second;
@@ -827,17 +827,17 @@ bool create_output::dump_meta(map<string,string>& _p)	{
 	mfs.close(); 
 	return true;
 }
-//
-//creates an output file, as specified in _params for a JSON kernel
-//
+
+// creates an output file, as specified in _params for a JSON kernel
+
 bool create_output::create(map<string,string>& _params, 
 				const create_results& _cr, 
 				map<int32_t, set<int32_t> >& _hu)	{
 	spectrum_count = atoi(_params["spectra"].c_str());
 	ifstream ifs;
-	ifs.open(_params["kernel file"],std::ifstream::in);
+	ifs.open(_params.find("kernel file")->second,std::ifstream::in);
 	if(!ifs.good())	{
-		cout << "Kernel file \"" << _params["kernel file"] << "\" would not open" << '\n';
+		cout << "Kernel file \"" << _params.find("kernel file")->second << "\" would not open" << '\n';
 		return false;
 	}
 	if(!load_mods())	{ //warns if "reports_mods.txt" is not present
@@ -867,7 +867,7 @@ bool create_output::create(map<string,string>& _params,
 		itsd++;
 	}
 	//initialize variables
-	int32_t res = atoi(_params["fragment tolerance"].c_str());
+	int32_t res = atoi(_params.find("fragment tolerance")->second.c_str());
 	int32_t inferred = 0;
 	double score_min = 200.0;
 	double total_prob = 0.0; //sum of all assigned probabilities
@@ -991,7 +991,7 @@ bool create_output::create(map<string,string>& _params,
 	delete buffer;
 	delete last;
 	//open a file stream to output information in odict
-	dump_lines(_params["output file"],total_prob);
+	dump_lines(_params.find("output file")->second,total_prob);
 	cout << '\n';
 	cout.flush();
 	return true;

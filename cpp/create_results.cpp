@@ -24,10 +24,8 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "load_spectra.hpp"
 #include "create_results.hpp"
 
-//
 // create_results takes the information recorded from the spectrum file and kernel file
 // and generates spectrum-to-peptide matches
-//
 
 bool create_results::create(map<string, string>& _p, // parameter strings
 		const load_spectra& _l, //spectrum informaiton

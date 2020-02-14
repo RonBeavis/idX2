@@ -37,10 +37,9 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "load_kernel.hpp"
 #include "load_spectra.hpp"
 
-//
 // Loads information from a kernel file specified in _params based on the spectra in the _load_spectra object.
 // The information is returned in the kerns and pmindex member objects
-//
+
 bool load_kernel::load(void)	{
 	ifstream ifs;
 	ifs.open(kfile,std::ifstream::in);
@@ -146,9 +145,9 @@ bool load_kernel::load(void)	{
 	sp_set.clear();
 	return true;
 }
-//
+
 // gets the next binary JSON object from an open ifstream
-//
+
 bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 {
 	_js.reset();
@@ -221,9 +220,9 @@ bool load_kernel::get_next(ifstream &_ifs,jsObject& _js)
 	}
 	return true;
 }
-//
+
 // loads kernel information from a binary JSON kernel file
-//
+
 bool load_kernel::load_binary(void)	{
 	ifstream ifs(kfile, ios::in | ios::binary);
 	if(ifs.fail())	{

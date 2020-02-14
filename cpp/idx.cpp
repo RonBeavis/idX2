@@ -102,17 +102,16 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 	#define _TIMESPEC_DEFINED
 #endif
 
-//
-//	Simple method to serve as a cross-platform check for the existence of a file
-//
+// Simple method to serve as a cross-platform check for the existence of a file
+
 inline bool exists (const std::string& name) {
     ifstream f(name.c_str());
     return f.good();
 }
-//
+
 // takes command line values and processes them into a list of process
 // parameters, stored in a map<string,string> object
-//
+
 int load_params(map<string,string>& params,int argc,char* argv[])	{
 	params["version"] = "idX, 2020.2 (std)";
 	params["fragmentation"] = "";
@@ -185,9 +184,9 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 	return 0;
 
 }
-//
-//	main procedure for performing tasks
-//
+
+// main procedure for performing tasks
+
 int main(int argc, char* argv[])	{
 	// checks for command line arguments
 	if(argc < 4)	{

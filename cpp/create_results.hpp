@@ -5,10 +5,10 @@
 # Identifies kernels corresponding to spectra
 #
 */
-/*
-id records the information about a spectrum-to-peptide match in enough detail
-to generate the output for that match
-*/
+
+// id records the information about a spectrum-to-peptide match in enough detail
+// to generate the output for that match
+
 class id
 {
 public:
@@ -50,6 +50,9 @@ public:
 	}
 };
 
+// object to generate PSM ids from the information obtained from the spectrum
+// file and the kernel file
+
 class create_results
 {
 public:
@@ -65,6 +68,5 @@ public:
 	
 	vector<id> ids; //identification information
 };
-
 
 

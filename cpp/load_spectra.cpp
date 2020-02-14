@@ -22,9 +22,7 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 #include "load_kernel.hpp"
 #include "load_spectra.hpp"
 
-//
-//	loads spectra using the MGF file specified in _params
-//
+// loads spectra using the MGF file specified in _params
 
 bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 	// open the spectrum file
