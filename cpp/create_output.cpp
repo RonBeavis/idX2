@@ -189,17 +189,21 @@ bool create_output::find_window(void)	{
 	int32_t l = -20;
 	// find the lower edge of the histogram (1%)
 	for(i = center;i >= -20 ; i--)	{
-		if(vs[i]/ic < 0.01)	{
+		if(l == -20 and vs[i]/ic < 0.01)	{
 			l = i;
-			break;
+		}
+		else if(l > -20 and vs[i]/ic > 0.05)	{
+			l = -20;
 		}
 	}
 	int32_t h = 20;
 	// find the upper edge of the histogram (1%)
 	for(i = center; i <= 20 ; i++)	{
-		if(vs[i]/ic < 0.01)	{
+		if(h == 20 and vs[i]/ic < 0.01)	{
 			h = i;
-			break;
+		}
+		else if(l < 20 and vs[i]/ic > 0.05)	{
+			h = 20;
 		}
 	}
 	low = l;
