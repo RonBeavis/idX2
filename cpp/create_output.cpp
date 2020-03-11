@@ -74,6 +74,7 @@ bool create_output::apply_model(int32_t _res, // fragent ion mass resolution in 
 				double _pm, // peptide mass
 				int32_t _ions, // # of ions identified
 				int32_t _lspectrum, // # of ions in spectrum being identified
+				int32_t  _z, // parent ion charge
 				double& pscore, // score to be returned
 				double& p)	{ // probability to be returned
 	p = 0.0001; //initialize output value
@@ -93,6 +94,9 @@ bool create_output::apply_model(int32_t _res, // fragent ion mass resolution in 
 	// calculate parameters for hypergeometric model
 	int32_t cells = get_cells(_pm,_res);
 	int32_t total_ions = 2*(int32_t)(_seq.size() - 1);
+	if(_z > 2)	{
+		total_ions *= 2;
+	}
 	if(total_ions > sfactor)	{
 		total_ions = sfactor;
 	}
@@ -601,7 +605,7 @@ bool create_output::create_binary(map<string,string>& _params,
 			}
 			seq = js.seq;
 			// apply math model to result to obtain a probability of stochastic assignment
-			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,score,prob);
+			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,sv[s].pz,score,prob);
 			if(score < score_min or sv[s].ri < 0.2 or sv[s].peaks < min_l)	{
 				continue; //bail out if match does not pass conditions
 			}
@@ -651,6 +655,7 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	int32_t ps_t = 0;
 	int32_t scan = 0;
 	multimap<int32_t,string> ostrings;
+	multimap<int32_t,string> estrings;
 	pair<int32_t,string> opair;
 	char *pString =  new char[1024*8];
 	set<int32_t> scans;
@@ -671,12 +676,14 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 				tot++; //record number of parent mass window hits
 			}
 			else	{
+				estrings.insert(opair);
 				err++; // record number of parent mass window misses
 			}
 		}
 	}
 	delete pString;
 	//define headers for the output TSV file
+	temp = "";
 	create_header_line(temp);
 
 	ofstream ofs;
@@ -688,6 +695,17 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	auto itS = ostrings.begin();
 	while(itS != ostrings.end())	{
 		ofs << itS->second;
+		itS++;
+	}
+	ofs.close();
+	string efile = _ofile;
+	efile.insert(_ofile.length()-4,"err");
+	ofs.open(efile); //open output stream
+	create_header_line(temp);
+	ofs << temp << '\n';
+	itS = estrings.begin();
+	while(itS != estrings.end())	{
+		ofs << itS->second << '\n';
 		itS++;
 	}
 	ofs.close();
@@ -958,7 +976,7 @@ bool create_output::create(map<string,string>& _params,
 			}
 			seq = js["seq"].GetString();
 			// apply math model to result to obtain a probability of stochastic assignment
-			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,score,prob);
+			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,sv[s].pz,score,prob);
 			if(score < score_min or sv[s].ri < 0.2 or sv[s].peaks < min_l)	{
 				continue; //bail out if match does not pass conditions
 			}

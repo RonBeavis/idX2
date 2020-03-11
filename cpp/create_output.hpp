@@ -88,8 +88,8 @@ public:
 	hypergeom(const int32_t _n,const int32_t _r,const int32_t _N)	{n = _n; r = _r; N = _N;}
 	virtual ~hypergeom() {}
 	int32_t n; // number of spectrum ions
-	int32_t N; // number of sequence ions possible
-	int32_t r; // number of fragment ion mass values available (cells)
+	int32_t N; // number of fragment ion mass values available (cells)
+	int32_t r; // number of sequence ions possible
 	//calculate the PDF (probability density function)
 	double pdf(const int32_t k)	{ 
 		double top = st(n)+st(r)+st(N-n)+st(N-r);
@@ -145,7 +145,7 @@ private:
 	//retrieves one of the parameters necessary for a hypergeometric model
 	int32_t get_cells(double _pm,int32_t _res); 
 	//calculates a probability model for a particular identification
-	bool apply_model(int32_t _r,string& _s,double _pm,int32_t _ions,int32_t _lspectrum,double& pscore,double& p);
+	bool apply_model(int32_t _r,string& _s,double _pm,int32_t _ions,int32_t _lspectrum,int32_t _z,double& pscore,double& p);
 	//generates a single line of text for TSV file output from JSON kernels
 	bool create_line(id& _s, double _pm, double _d, double _ppm, double _score, Document& _js, int32_t _u, string& _line);
 	//generates a single line of text for TSV file output from JSON binary kernels

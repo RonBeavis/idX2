@@ -155,7 +155,8 @@ public:
 		mis.clear();
 		sPair spr;
 		const double ptd = 1.0/70.0; 
-		spr.first = (int32_t)(0.5+(double)pm*ptd); //calculate the reduced value used for indexing the parent ion mass
+		int32_t spr1 = (int32_t)(0.5+(double)pm*ptd); //calculate the reduced value used for indexing the parent ion mass
+		spr.first = spr1;
 		//create a new vector of fragment ion mass,intensity pairs using
 		//the reduced value corresponding to the fragment ion mass tolerance.
 		//3 values are recorded, to compensate for errors introduced
@@ -163,73 +164,40 @@ public:
 		pks = 0;
 		int32_t pks2 = 0;
 		int32_t pm_limit = (pm - 100000)/2;
+		int32_t j = 0;
+		int32_t p1 = 0;
 		for(size_t a=0; a < pMs.size();a++)	{
 			m = pMs[a].first;
 			isum += pMs[a].second;
 			pks++;
-			p.first = (int32_t)(0.5+(double)m*res);
-			spr.second = p.first;
-			spairs.insert(spr);
-			spr.first += 1;
-			spairs.insert(spr);
-			spr.first -= 2;
-			spairs.insert(spr);
-			spr.first += 1;
+			p1 = (int32_t)(0.5+(double)m*res);
+			p.first = p1;
 			p.second = pMs[a].second;
-			mis.push_back(p);
+			for(i = -1; i < 2; i++)	{
+				p.first = p1 + i;
+				mis.push_back(p);
+				for(j = -1; j < 2; j++)	{
+					spr.first = spr1 + j;
+					spr.second = p.first;
+					spairs.insert(spr);
+				}
+			}
 
-			p.first -= 1;
-			spr.second = p.first;
-			spairs.insert(spr);
-			spr.first += 1;
-			spairs.insert(spr);
-			spr.first -= 2;
-			spairs.insert(spr);
-			spr.first += 1;
-			mis.push_back(p);
-
-			p.first += 2;
-			spr.second = p.first;
-			spairs.insert(spr);
-			spr.first += 1;
-			spairs.insert(spr);
-			spr.first -= 2;
-			spairs.insert(spr);
-			spr.first += 1;
-			mis.push_back(p);
 			// add z=2 fragment masses as a possibility if appropriate
 			if(pz > 1 and m > 400000 and m < pm_limit)	{
 				pks2++;
-				p.first = (int32_t)(0.5+(double)(m*2-1003)*res);
-				spr.second = p.first;
-				spairs.insert(spr);
-				spr.first += 1;
-				spairs.insert(spr);
-				spr.first -= 2;
-				spairs.insert(spr);
-				spr.first += 1;
+				p1 = (int32_t)(0.5+(double)(m*2-1003)*res);
+				p.first = p1;
 				p.second = pMs[a].second;
-				mis.push_back(p);
-
-				p.first -= 1;
-				spr.second = p.first;
-				spairs.insert(spr);
-				spr.first += 1;
-				spairs.insert(spr);
-				spr.first -= 2;
-				spairs.insert(spr);
-				spr.first += 1;
-				mis.push_back(p);
-
-				p.first += 2;
-				spr.second = p.first;
-				spairs.insert(spr);
-				spr.first += 1;
-				spairs.insert(spr);
-				spr.first -= 2;
-				spairs.insert(spr);
-				spr.first += 1;
-				mis.push_back(p);
+				for(i = -1; i < 2; i++)	{
+					p.first = p1 + i;
+					mis.push_back(p);
+					for(j = -1; j < 2; j++)	{
+						spr.first = spr1 + j;
+						spr.second = p.first;
+						spairs.insert(spr);
+					}
+				}
 			}
 		}
 		// add 3 to pks if there are +2 peaks recorded and z = 2

@@ -32,9 +32,7 @@ bool create_results::create(map<string, string>& _p, // parameter strings
 		load_kernel& _k) { // kernel information
 	int32_t z = 1; // serial number for PSM: used if spectrum::sc is not available
 	const double pt = 1.0/70.0;
-	vector<int32_t> dvals{ -1,0,1 }; // values to compensate for integer rounding effects
 	// initialize variables for the identification process
-	int32_t d = 0;
 	int32_t m = 0;
 	int32_t idi = 0;
 	int32_t cpm = 0;
@@ -45,7 +43,6 @@ bool create_results::create(map<string, string>& _p, // parameter strings
 	kPair pv; // a kernel (parent,fragment) pair
 	const size_t clength = _k.channels.size();
 	size_t a = 0;
-	size_t n = 0;
 	size_t b = 0;
 	int32_t mi = 0;
 	// loop through spectra
@@ -80,31 +77,28 @@ bool create_results::create(map<string, string>& _p, // parameter strings
 			}
 			cpm = (int32_t)(0.5 + (double)_k.channels[a].mv * pt); //current reduced parent mass
 			// loop through possible parent mass values to compensate for rounding errors
-			for (n = 0; n < dvals.size(); n++) {
-				d = dvals[n];
-				pv.first = cpm + d; //initialize (parent,fragment) pair
-				// bail if parent had no fragments in any kernel
-				if(_k.kerns.mvindex_a[a].find(pv.first) == _k.kerns.mvindex_a[a].end())	{
+			pv.first = cpm; //initialize (parent,fragment) pair
+			// bail if parent had no fragments in any kernel
+			if(_k.kerns.mvindex_a[a].find(pv.first) == _k.kerns.mvindex_a[a].end())	{
+				continue;
+			}
+			//loop through spectrum fragment (mass,intensity) pairs
+			for(b = 0; b < _l.spectra[s].mis.size(); b++)	{
+				m = _l.spectra[s].mis[b].first; //fragment mass
+				pv.second = m; //set fragment mass in (mass,intensity) pair
+				itk = _k.kerns.kindex_a[a].find(pv); //
+				idx.clear();
+				// check if pair was in kernels and record result
+				if(itk !=  _k.kerns.kindex_a[a].end())	{ 
+					idx.insert(idx.end(),_k.kerns.kindex_a[a][pv].begin(),_k.kerns.kindex_a[a][pv].end());
+					idi = _l.spectra[s].mis[b].second;
+				}
+				else	{
 					continue;
 				}
-				//loop through spectrum fragment (mass,intensity) pairs
-				for(b = 0; b < _l.spectra[s].mis.size(); b++)	{
-					m = _l.spectra[s].mis[b].first; //fragment mass
-					pv.second = m; //set fragment mass in (mass,intensity) pair
-					itk = _k.kerns.kindex_a[a].find(pv); //
-					idx.clear();
-					// check if pair was in kernels and record result
-					if(itk !=  _k.kerns.kindex_a[a].end())	{ 
-						idx.insert(idx.end(),_k.kerns.kindex_a[a][pv].begin(),_k.kerns.kindex_a[a][pv].end());
-						idi = _l.spectra[s].mis[b].second;
-					}
-					else	{
-						continue;
-					}
-					// record kernel matching information
-					ims.push_back(idi); // matched fragment ion intensity
-					ident.push_back(idx); // vector of matched kernels
-				}
+				// record kernel matching information
+				ims.push_back(idi); // matched fragment ion intensity
+				ident.push_back(idx); // vector of matched kernels
 			}
 		}
 		if(ident.empty())	{ //bail out if no identifications were found, do not update the PSM serial number "z"
