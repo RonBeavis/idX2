@@ -124,6 +124,7 @@ public:
 		spectrum_count = 0;
 		load_distribution();
 		validation = "";
+		errors_tsv = true;
 	}
 	virtual ~create_output(void) {}
 	// generates a TSV formatted output file from results using a JSON kernel
@@ -169,6 +170,7 @@ private:
 	string fragmentation; // fragmentation type information
 	const int32_t c13 = 1003; //mass difference between the A1 and A0 peaks
 	map<int32_t,vector<double> > distribution; // available fragment mass density distribution
+	bool errors_tsv; // "true" creates a separate TSV file containing excluded results
 	//retrieves the scan column from a formatted output string
 	int32_t get_scan(const string& t)	{
 		size_t s = t.find("\t");

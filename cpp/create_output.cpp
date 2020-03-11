@@ -698,17 +698,19 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		itS++;
 	}
 	ofs.close();
-	string efile = _ofile;
-	efile.insert(_ofile.length()-4,"err");
-	ofs.open(efile); //open output stream
-	create_header_line(temp);
-	ofs << temp << '\n';
-	itS = estrings.begin();
-	while(itS != estrings.end())	{
-		ofs << itS->second << '\n';
-		itS++;
+	if(errors_tsv)	{
+		string efile = _ofile;
+		efile.insert(_ofile.length()-4,".err");
+		ofs.open(efile); //open output stream
+		create_header_line(temp);
+		ofs << temp << '\n';
+		itS = estrings.begin();
+		while(itS != estrings.end())	{
+			ofs << itS->second << '\n';
+			itS++;
+		}
+		ofs.close();
 	}
-	ofs.close();
 	// create validation hash value
 	std::ifstream ifs(_ofile, std::ios::binary);
 	std::vector<unsigned char> s(picosha2::k_digest_size);
