@@ -172,6 +172,24 @@ private:
 	map<int32_t,vector<double> > distribution; // available fragment mass density distribution
 	bool errors_tsv; // "true" creates a separate TSV file containing excluded results
 	//retrieves the scan column from a formatted output string
+	double get_ri_limit(size_t _s)	{
+		if(_s > 11)	{
+			return 0.2;
+		}
+		if(_s <= 8)	{
+			return 0.4;
+		}
+		else if(_s == 9)	{
+			return 0.35;
+		}
+		else if(_s == 10)	{
+			return 0.3;
+		}
+		else if(_s == 11)	{
+			return 0.25;
+		}
+		return 0.2;
+	}
 	int32_t get_scan(const string& t)	{
 		size_t s = t.find("\t");
 		s = t.find("\t",s+1);

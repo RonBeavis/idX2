@@ -254,6 +254,8 @@ public:
 
 	// load spectra using the information in _p
 	bool load(map<string,string>& _p,load_kernel& _lk);
+	bool load_mgf(map<string,string>& _p,load_kernel& _lk);
+	bool load_cmn(map<string,string>& _p,load_kernel& _lk);
 	// enforces the maximum number of spectra to use by truncating
 	// the spectra vector
 	void set_max(const int32_t _max)	{

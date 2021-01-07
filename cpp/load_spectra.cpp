@@ -25,6 +25,22 @@ typedef std::pair <int32_t, int32_t> kPair; //type used to record (parent,fragme
 // loads spectra using the MGF file specified in _params
 
 bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
+	// check for MGF format file via file extension
+	size_t f = _params["spectrum file"].find(".mgf");
+	if(f != _params["spectrum file"].npos && f == _params["spectrum file"].length() - 4)	{
+		cout << "mgf format file detected\n";
+		cout.flush();
+		return load_mgf(_params,_lk);
+	}
+	// check for CMN format file via file extension
+	f = _params["spectrum file"].find(".cmn");
+	if(f != _params["spectrum file"].npos && f == _params["spectrum file"].length() - 4)	{
+		return load_cmn(_params,_lk);
+	}
+	return false;
+}
+
+bool load_spectra::load_mgf(map<string,string>& _params,load_kernel& _lk)	{
 	// open the spectrum file
 	ifstream istr;
 	istr.open(_params["spectrum file"]); // opens input file stream
@@ -157,6 +173,197 @@ bool load_spectra::load(map<string,string>& _params,load_kernel& _lk)	{
 	cout.flush();
 	delete line;
 	istr.close();
+	//calculate a SHA256 hash value for the spectrum file
+	//for validation use
+	std::ifstream ifile(_params["spectrum file"], std::ios::binary);
+	std::vector<unsigned char> sfile(picosha2::k_digest_size);
+	picosha2::hash256(ifile, sfile.begin(), sfile.end());
+	ifile.close();
+	std::string hash_hex_str;
+	picosha2::hash256_hex_string(sfile, hash_hex_str);
+	validation = hash_hex_str;
+	return true;
+}
+
+bool load_spectra::load_cmn(map<string,string>& _params,load_kernel& _lk)	{
+	// open the spectrum file
+	FILE *pFile;
+	pFile = fopen(_params["spectrum file"].c_str(),"rb");
+	if(pFile == NULL)	{
+		return false;
+	}
+	size_t ret = 0;
+	char *pLine = new char[1024];
+	ret = fread((void *)pLine,1,256,pFile);
+	if(ret != 256)	{
+		fclose(pFile);
+		cout << "File not in CMN format (1)\n";
+		cout.flush();
+		return false;
+	}
+	unsigned int tLength = 255;
+	pLine[tLength] = '\0';
+	size_t version = 1;
+	if(strstr(pLine,"CMN ") != pLine)	{
+		fclose(pFile);
+		cout << "File not in CMN format (2)\n";
+		cout.flush();
+		delete pLine;
+		return false;
+	}
+	if(pLine[64] != 0)	{
+		version = 2;
+	}
+	else	{
+		version = 1;
+	}
+	// set up parameters and temporary values
+	int32_t res = (int32_t)atoi(_params["fragment tolerance"].c_str());
+	double pt = atoi(_params["parent tolerance"].c_str());
+	size_t len = 1024*4; // maximum line length
+	size_t size = 0;  // size of current line
+	char *line = new char[len]; //char buffer used to read file
+	string temp = ""; // temporary string object
+	string desc = ""; //description information (if available)
+	size_t equals = 0;
+	double parent = 0.0; //parent mass
+	double charge = 1.0; //parent charge
+	string run_time = ""; //chromatographic retention time information (if available)
+	vector<double> masses; // vector of fragment masses
+	vector<double> intensities; // vector of fragment intensities
+	spectrum sp; // spectrum object
+	const double proton = 1.007276; //constant used to recalculate neutral masses
+	int32_t scan = 0; //scan number of the spectrum
+	int32_t s = 1; // spectrum count
+	double rt = 0.0; // run time (seconds)
+	unsigned short sValue = 0;
+	unsigned char cValue = 0;
+	unsigned int iValue = 0;
+	float fValue = 0.0;
+	double dValue = 0.0;
+	float pi = 100.0;
+	// process the file, one line at a time
+	while(!feof(pFile))	{
+		ret = fread((void *)&iValue,sizeof(unsigned int),1,pFile);
+		scan = iValue;
+		ret = fread((void *)&dValue,sizeof(double),1,pFile);
+		parent = dValue - proton;
+		ret = fread((void *)&cValue,1,1,pFile);
+		charge = (double)cValue;
+		if(version == 2)	{
+			unsigned int iValue = 0;
+			ret = fread((void *)&iValue,4,1,pFile);
+			if(iValue > tLength)	{
+				tLength = iValue + 255;
+				delete pLine;
+				pLine = new char[tLength];
+			}
+			ret = fread((void *)pLine,1,iValue,pFile);
+			pLine[iValue] = '\0';
+		}
+		else	{	
+			ret = fread((void *)&cValue,1,1,pFile);
+			ret = fread((void *)pLine,1,(int)cValue,pFile);
+			pLine[cValue] = '\0';
+		}
+		desc = pLine;
+		sp.clear();
+		sp.pm = (int32_t)(0.5 + 1000*parent); // convert to mDa
+		sp.pz = (int32_t)charge; // record charge
+		sp.pi = pi; // parent intensity
+		sp.pt = pt; // record parent tolerance
+		sp.desc = desc; // record spectrum description
+		sp.rt = rt; // record retention time
+		//substitute ordinal value for scan number, if no scan available
+		if(scan == 0)	{
+			sp.sc = s;
+			equals = desc.find("scan=");
+			if(equals != desc.npos)	{
+				equals += 5;
+				sp.sc = atol(desc.substr(equals,size-equals).c_str());
+			}
+		}
+		else	{
+			sp.sc = scan;
+		}
+		fValue = 0.0;
+		ret = fread((void *)&fValue,sizeof(float),1,pFile);
+//		float fIntensity = fValue;
+		cValue = 0;
+		ret = fread((void *)&cValue,1,1,pFile);
+		size_t tSize = (size_t)cValue;
+		fValue = 0.0;
+		ret = fread((void *)&fValue,sizeof(float),1,pFile);
+		ret = fread((void *)&cValue,1,1,pFile);
+		float fScale = fValue;
+		size_t a = 0;
+		ret = fread((void *)&sValue,2,1,pFile);
+		iValue = (unsigned int)sValue;
+		masses.push_back((float)iValue/fScale);
+		a++;
+		while(a < tSize)	{
+			ret = fread((void *)&sValue,2,1,pFile);
+			iValue += (unsigned int)sValue;
+			masses.push_back((float)iValue/fScale);
+			a++;
+		}
+		a = 0;
+		double dSum = 0.0;
+		char cMax = 0;
+		while(a < tSize)	{
+			ret = fread((void *)&cValue,1,1,pFile);
+			intensities.push_back((float)cValue);
+			if(cMax < cValue)	{
+				cMax = cValue;
+			}
+			dSum += (double)cValue;
+			a++;
+		}
+		if(parent > 600.0)	{
+			size_t i = 0;
+			pair<int32_t,int32_t> p;
+			while(i < masses.size())	{
+				p.first = (int32_t)(0.5+1000.0*(masses[i]-proton));
+				p.second = (int32_t)(0.5+intensities[i]);
+				sp.mis.push_back(p);
+				i++;
+			}
+			// clean up spectrum pairs for later use
+			sp.condition(res,50);
+			// add information to _lk
+			_lk.sp_set.insert(sp.pm);
+			_lk.spairs.insert(sp.spairs.begin(),sp.spairs.end());
+			// remove pair information
+			sp.spairs.clear();
+			// record spectrum info spectra vector
+			spectra.push_back(sp);
+		}
+		else	{
+			// track number of spectra that didn't pass mass test
+			skipped++;
+		}
+		//clean up to be ready for the next spectrum
+		desc = "";
+		masses.clear();
+		intensities.clear();
+		parent = 0.0;
+		charge = 0.0;
+		s++;
+		//output progress text for logging
+		if(s % 2500 == 0)	{
+			cout << '.';
+			cout.flush();
+		}
+		if(s != 0 and s % 50000 == 0)	{
+			cout << ' ' << s << '\n';
+			cout.flush();
+		}
+		scan = 0;
+	}
+	cout << "\n";
+	cout.flush();
+	delete line;
+	fclose(pFile);
 	//calculate a SHA256 hash value for the spectrum file
 	//for validation use
 	std::ifstream ifile(_params["spectrum file"], std::ios::binary);
