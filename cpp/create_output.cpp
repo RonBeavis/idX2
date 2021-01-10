@@ -149,24 +149,26 @@ bool create_output::load_mods(void)	{
 bool create_output::find_window(void)	{
 	map<int32_t,int32_t> vs;
 	int32_t i = 0;
-	// initialize a histogram between 20 ppm to -20 ppm
-	for(i = -21; i < 22; i++)	{
+	int32_t ilow = -1*parent_tolerance;
+	int32_t ihigh = parent_tolerance;
+	// initialize a histogram between ilow ppm to ihigh ppm
+	for(i = ilow-1; i <= ihigh+1; i++)	{
 		vs[i] = 0;
 	}
 	auto it = ppms.begin();
 	// iterate through ids to populate the histogram
 	while(it != ppms.end())	{
 		i = roundf(*it);
-		if(i >= -21 and i <= 21)	{
+		if(i >= ilow-1 and i <= ihigh+1)	{
 			vs[i] += 1;
 		}
 		it++;
 	}
 	ppm_map.clear();
 	int32_t max = 0;
-	int32_t center = -21;
+	int32_t center = ilow-1;
 	// put the histogram into map form
-	for(i = -20; i < 21;i++)	{
+	for(i = ilow; i <= high;i++)	{
 		if(vs[i] > max)	{
 			max = vs[i];
 			center = i;
@@ -178,36 +180,36 @@ bool create_output::find_window(void)	{
 	if(max < 100)	{
 		low = center - 10;
 		high = center + 10;
-		if(low < -21)	low = -21;
-		if(high > 21)	high = 21;
+		if(low < ilow-1)	low = ilow-1;
+		if(high > ihigh+1)	high = high+1;
 		return true;
 	}
 	// bail out if there aren't enough ids
 	// and set no window
-	else if(max < 20)	{
-		low = -21;
-		high = 21;
+	else if(max < ihigh)	{
+		low = ilow-1;
+		high = ihigh+1;
 		return true;
 	}
 	double ic = (double)max;
-	int32_t l = -20;
+	int32_t l = ilow;
 	// find the lower edge of the histogram (1%)
-	for(i = center;i >= -20 ; i--)	{
-		if(l == -20 and vs[i]/ic < 0.01)	{
+	for(i = center;i >= ilow ; i--)	{
+		if(l == ilow and vs[i]/ic < 0.01)	{
 			l = i;
 		}
-		else if(l > -20 and vs[i]/ic > 0.05)	{
-			l = -20;
+		else if(l > ilow and vs[i]/ic > 0.05)	{
+			l = ilow;
 		}
 	}
-	int32_t h = 20;
+	int32_t h = ihigh;
 	// find the upper edge of the histogram (1%)
-	for(i = center; i <= 20 ; i++)	{
-		if(h == 20 and vs[i]/ic < 0.01)	{
+	for(i = center; i <= ihigh ; i++)	{
+		if(h == ihigh and vs[i]/ic < 0.01)	{
 			h = i;
 		}
-		else if(l < 20 and vs[i]/ic > 0.05)	{
-			h = 20;
+		else if(l < ihigh and vs[i]/ic > 0.05)	{
+			h = ihigh;
 		}
 	}
 	low = l;
@@ -495,6 +497,9 @@ bool create_output::create_binary(map<string,string>& _params,
 				const create_results& _cr,
 				map<int32_t, set<int32_t> >& _hu)	{
 	spectrum_count = atoi(_params.find("spectra")->second.c_str());
+	parent_tolerance = atoi(_params.find("parent tolerance")->second.c_str());
+	low = parent_tolerance - 1;
+	high = parent_tolerance + 1;
 	ifstream ifs(_params.find("kernel file")->second,ios::in | ios::binary);
 	if(ifs.fail())	{
 		return false;
@@ -549,6 +554,7 @@ bool create_output::create_binary(map<string,string>& _params,
 	int32_t c = 0; //lines read counter
 	int32_t h = 0; //for checking peptide homology
 	double ri_limit = 0.2;
+	double dparent = (double)parent_tolerance;
 	//loop through the JSON Lines entries in the kernel file to find
 	//the information about individual ids
 	osObject js;
@@ -607,7 +613,7 @@ bool create_output::create_binary(map<string,string>& _params,
 			else if(delta > 1.5)	{
 				ppm = 1.0e6*(sv[s].pm-2*c13-pm)/pm;
 			}
-			if(fabs(ppm) > 20.0)	{
+			if(fabs(ppm) > dparent)	{
 				continue;
 			}
 			seq = js.seq;
@@ -748,7 +754,7 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	double evalue = 0.0;
 	if(dtot > 0.0 and low_t > -15)	{
 		evalue = 0.0;
-		for(int32_t i = -20; i <= -15; i++)	{
+		for(int32_t i = -1*parent_tolerance; i <= -15; i++)	{
 			evalue += (double)ppm_map[i];
 		}
 		evalue /= 6.0;
@@ -769,7 +775,7 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 	}
 	else if(dtot > 0.0 and high_t < 15)	{
 		evalue = 0.0;
-		for(int32_t i = 15; i <= 20; i++)	{
+		for(int32_t i = 15; i <= parent_tolerance; i++)	{
 			evalue += (double)ppm_map[i];
 		}
 		evalue /= 6.0;
@@ -866,6 +872,9 @@ bool create_output::create(map<string,string>& _params,
 				const create_results& _cr, 
 				map<int32_t, set<int32_t> >& _hu)	{
 	spectrum_count = atoi(_params["spectra"].c_str());
+	parent_tolerance = atoi(_params["parent tolerance"].c_str());
+	low = parent_tolerance - 1;
+	high = parent_tolerance + 1;
 	ifstream ifs;
 	ifs.open(_params.find("kernel file")->second,std::ifstream::in);
 	if(!ifs.good())	{
@@ -927,6 +936,7 @@ bool create_output::create(map<string,string>& _params,
 	const int max_buffer = 1024*8-1;
 	char *buffer = new char[max_buffer+1];
 	char *last = new char[max_buffer+1];
+	double dparent = (double)parent_tolerance;
 	while(ifs.getline(buffer,max_buffer))	{
 		//output keep-alive text for logging
 		if(c != 0 and c % 10000 == 0)	{
@@ -988,7 +998,7 @@ bool create_output::create(map<string,string>& _params,
 			else if(delta > 1.5)	{
 				ppm = 1.0e6*(sv[s].pm-2*c13-pm)/pm;
 			}
-			if(fabs(ppm) > 20.0)	{
+			if(fabs(ppm) > dparent)	{
 				continue;
 			}
 			seq = js["seq"].GetString();

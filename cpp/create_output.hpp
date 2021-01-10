@@ -121,6 +121,7 @@ public:
 	create_output(void)	{
 		low = -21;
 		high = 21;
+		parent_tolerance = 20;
 		spectrum_count = 0;
 		load_distribution();
 		validation = "";
@@ -159,6 +160,7 @@ private:
 	bool dump_lines(string& _ofile,double _tp); 
 	int32_t low; // lower value for the ppm window calculated in find_window
 	int32_t high; // upper value for the ppm window calculated in find_window
+	int32_t parent_tolerance; // parent tolerance in ppm
 	int32_t spectrum_count; // number of spectra
 	map<int32_t,id> sv; // records id values
 	map<int32_t,set<int32_t>> sdict; // records id values in a map

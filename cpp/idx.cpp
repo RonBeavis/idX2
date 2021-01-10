@@ -113,73 +113,92 @@ inline bool exists (const std::string& name) {
 // parameters, stored in a map<string,string> object
 
 int load_params(map<string,string>& params,int argc,char* argv[])	{
-	params["version"] = "idX, 2020.4 (std)";
+	params["version"] = "idX, 2021.1 (std)";
 	params["fragmentation"] = "";
-	int32_t fragment_tolerance = 300; // default fragment mass tolerance
-	try	{
-		if(argc > 4 and strcmp(argv[4],"high") == 0)	{
-			fragment_tolerance = 20;
-		}
-		else if (argc > 4 and strcmp(argv[4],"medium") == 0)	{
-			fragment_tolerance = 50;
-		}
-	}
-	catch (...)	{
-		cout << "Error (idx:0020): exception thrown trying to assign fragment tolerance" << '\n';
-		return 1;
-	}
+	params["parent tolerance"] = "20";
+	params["fragment tolerance"] = "300";
+	params["maximum spectra"] = "-1";
+	params["spectrum file"] = "";
+	params["kernel file"] = "";
+	params["output file"] = "";
+	char flag[16] = "";
+	char *pvalue = NULL;
 	ostringstream strStream; //using ostringstream to avoid potentially unsafe sprintf
-	try	{
-		strStream.clear();
-		strStream.str("");
-		strStream << (long)fragment_tolerance;
-		params["fragment tolerance"] = strStream.str();
-	}
-	catch (...)	{
-		cout << "Error (idx:0021): exception thrown trying to assign fragment tolerance" << '\n';
-		return 1;
-	}
-	string spectrum_file = argv[1]; //file containing spectra in MGF format
-    	if(!exists(spectrum_file))	{
-		cout << "Error (idx:0001): spectrum file \"" << spectrum_file << "\" does not exist" << '\n';
-		return 2;
-	}
-	params["spectrum file"] = spectrum_file;
-
-	string kernel_file = argv[2]; //file containing kernels in JSON Lines format
-    	if(!exists(kernel_file))	{
-		cout << "Error (idx:0002): kernel file \"" << kernel_file << "\" does not exist" << '\n';
-		return 2;
-	}
-	params["kernel file"] = kernel_file;
-
-	string output_file = argv[3]; //file that will contain the identifications in TSV format
-	params["output file"] = output_file;
-
-	int32_t maximum_spectra = -1; //if not -1, determines the number of spectra to consider
-	try	{
-		if(argc > 5)	{
-			maximum_spectra = atoi(argv[5]);
+	for(int i = 1; i < argc; i++)	{
+		flag[0] = argv[i][0];
+		flag[1] = argv[i][1];
+		flag[2] = '\0';
+		pvalue = argv[i]+2;
+		cout << flag << ":" << pvalue << "\n";
+		if(strcmp(flag,"-f") == 0)	{
+			int32_t fragment_tolerance = 300; // default fragment mass tolerance
+			try	{
+				if(strcmp(pvalue,"high") == 0)	{
+					fragment_tolerance = 20;
+				}
+				else if (strcmp(pvalue,"medium") == 0)	{
+					fragment_tolerance = 50;
+				}
+			}
+			catch (...)	{
+				cout << "Error (idx:0020): exception thrown trying to assign fragment tolerance" << '\n';
+				return 1;
+			}
+			try	{
+				strStream.clear();
+				strStream.str("");
+				strStream << (long)fragment_tolerance;
+				params["fragment tolerance"] = strStream.str();
+			}
+			catch (...)	{
+				cout << "Error (idx:0021): exception thrown trying to assign fragment tolerance" << '\n';
+				return 1;
+			}
 		}
-		strStream.clear();
-		strStream.str("");
-		strStream << (long)maximum_spectra;
-		params["maximum spectra"] = strStream.str();
-	}
-	catch (...)	{
-		cout << "Error (idx:0022): exception thrown trying to assign maximum spectra" << '\n';
-		return 1;
-	}
-	int32_t parent_tolerance = 20; //parent ion mass tolerance is fixed at 20 mDa
-	try	{
-		strStream.clear();
-		strStream.str("");
-		strStream << (long)parent_tolerance;
-		params["parent tolerance"] = strStream.str();
-	}
-	catch (...)	{
-		cout << "Error (idx:0023): exception thrown trying to assign parent tolerance" << '\n';
-		return 1;
+		if(strcmp(flag,"-s") == 0)	{
+			string spectrum_file = pvalue; //file containing spectra in MGF format
+		    	if(!exists(spectrum_file))	{
+				cout << "Error (idx:0001): spectrum file \"" << spectrum_file << "\" does not exist" << '\n';
+				return 2;
+			}
+			params["spectrum file"] = spectrum_file;
+		}
+		if(strcmp(flag,"-k") == 0)	{
+			string kernel_file = pvalue; //file containing kernels in JSON Lines format
+		    	if(!exists(kernel_file))	{
+				cout << "Error (idx:0002): kernel file \"" << kernel_file << "\" does not exist" << '\n';
+				return 2;
+			}
+			params["kernel file"] = kernel_file;
+		}
+		if(strcmp(flag,"-o") == 0)	{
+			string output_file = pvalue; //file that will contain the identifications in TSV format
+			params["output file"] = output_file;
+		}
+		if(strcmp(flag,"-m") == 0)	{
+			try	{
+				strStream.clear();
+				strStream.str("");
+				strStream << atoi(pvalue);
+				params["maximum spectra"] = strStream.str();
+			}
+			catch (...)	{
+				cout << "Error (idx:0022): exception thrown trying to assign maximum spectra" << '\n';
+				return 1;
+			}
+		}
+		if(strcmp(flag,"-p") == 0)	{
+			try	{
+				strStream.clear();
+				strStream.str("");
+				strStream << atoi(pvalue);
+				params["parent tolerance"] = strStream.str();
+			}
+			catch (...)	{
+				cout << "Error (idx:0023): exception thrown trying to assign parent tolerance" << '\n';
+				return 1;
+			}
+		}
 	}
 	return 0;
 
@@ -190,7 +209,7 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 int main(int argc, char* argv[])	{
 	// checks for command line arguments
 	if(argc < 4)	{
-		cout << "usage:\t>idX SPECTRA_FILE KERNEL_FILE OUTPUT_FILE (high|medium|low*) (max_spectra*)" << '\n';
+		cout << "usage:\t>idX -sSPEC_FILE -kKERN_FILE -oOUT_FILE -f(high|medium|low=low) -m(max_spectra=-1) -p(PARENT_TOLERANCE=20)" << '\n';
 		return 0;
 	}
 	map<string,string> params; //used to store command line and other constant values
