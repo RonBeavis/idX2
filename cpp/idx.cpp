@@ -109,6 +109,28 @@ inline bool exists (const std::string& name) {
     return f.good();
 }
 
+void print_help(void)	{
+	cout << "\nusage:\t>idX -sFILE -kFILE -oFILE -f(low) -m(-1) -p(20)" << "\n";
+	cout << "\n1. Required parameters.\n\n";
+	cout << "-sFILE       spectrum peak list file path\n";
+	cout << "             FILE:  MGF or CMN format peak list\n";
+	cout << "-kFILE       kernel file path\n";
+	cout << "             FILE:  JSON lines format kernel list\n";
+	cout << "-oFILE       output file path\n";
+	cout << "             FILE:  TSV format result file\n";
+	cout << "\n2. Optional parameters.\n\n";
+	cout << "-fVALUE      fragment mass tolerance\n";
+	cout << "             VALUE: low, medium or high\n";
+	cout << "             default: low\n";
+	cout << "-mVALUE      maximum number of spectra to use\n";
+	cout << "             VALUE:  positive integer or -1 if use all\n";
+	cout << "             default: -1\n";
+	cout << "-pVALUE      parent mass tolerance (ppm)\n";
+	cout << "             VALUE: positive integer\n";
+	cout << "             default: 20\n";
+	return;
+}
+
 // takes command line values and processes them into a list of process
 // parameters, stored in a map<string,string> object
 
@@ -122,6 +144,16 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 	params["kernel file"] = "";
 	params["output file"] = "";
 	char flag[16] = "";
+	if(argc > 1)	{
+		if(strcmp(argv[1],"--version") == 0)	{
+			cout << params["version"] << "\n";
+			exit(0);
+		} 
+		if(strcmp(argv[1],"--help") == 0)	{
+			print_help();
+			exit(0);
+		} 
+	}
 	char *pvalue = NULL;
 	ostringstream strStream; //using ostringstream to avoid potentially unsafe sprintf
 	for(int i = 1; i < argc; i++)	{
@@ -208,8 +240,8 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 
 int main(int argc, char* argv[])	{
 	// checks for command line arguments
-	if(argc < 4)	{
-		cout << "usage:\t>idX -sSPEC_FILE -kKERN_FILE -oOUT_FILE -f(high|medium|low=low) -m(max_spectra=-1) -p(PARENT_TOLERANCE=20)" << '\n';
+	if(argc < 2)	{
+		print_help();
 		return 0;
 	}
 	map<string,string> params; //used to store command line and other constant values
