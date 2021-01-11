@@ -3,7 +3,7 @@ Second version of the idX algorithm. Implemented in C++ 17, using the idX Python
 
 A proteomics PSM assignment engine replacing most of the math with operations involving indexed collections. Identification confidence scoring based on Fisher's noncentral hypergeometric distribution, in conjunction with the number of ions matched with a sequence fragmentation pattern and the fraction of the ion intensity corresponding to those matched ions.
 
-Current version: `2020.03 (std)`
+Current version: `2021.01 (std)`
 
 ## Kernels:
 
@@ -42,11 +42,7 @@ where the "value" is the SHA256 hash of all of the preceeding lines, with leadin
 
 The software runs using the `main()` method in `idx.cpp` to control the workflow of PSM identification. This method is also responsible for most of the logging text output that is directed to stdout. The order of operations in this method are as follows:
 
-1. Command line parameters are checked and stored. There are 4 required parameters:
-- input spectrum file path (SPECTRUM_PATH)
-- input kernel file path  (KERNEL_PATH)
-- output file path (OUTPUT_PATH)
-- fragment ion accuracy ("high" = 20 mDa, "medium" = 50 mDa and "low" = 400 mDa)
+1. Command line parameters are checked and stored. Use the "--help" command line option to list the current list of parameters.
 
 2. A `load_kernel` object is created and passed to a `load_spectra` object, that creates a list of spectra in the `load_spectra` object and an index of those spectra in the `load_kernel` object.
 
