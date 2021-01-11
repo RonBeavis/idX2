@@ -112,25 +112,25 @@ inline bool exists (const std::string& name) {
 void print_help(void)	{
 	cout << "\nusage:\t>idX -sFILE -kFILE -oFILE -f(low) -m(-1) -p(20)" << "\n";
 	cout << "\n1. Required parameters.\n";
-	cout << "-sFILE       spectrum peak list file path\n";
-	cout << "             FILE:  MGF or CMN format peak list\n";
-	cout << "-kFILE       kernel file path\n";
-	cout << "             FILE:  JSON lines format kernel list\n";
-	cout << "-oFILE       output file path\n";
-	cout << "             FILE:  TSV format result file\n";
+	cout << "-sFILE           spectrum peak list file path\n";
+	cout << "                 FILE:  MGF or CMN format peak list\n";
+	cout << "-kFILE           kernel file path\n";
+	cout << "                 FILE:  JSON lines format kernel list\n";
+	cout << "-oFILE           output file path\n";
+	cout << "                 FILE:  TSV format result file\n";
 	cout << "\n2. Optional parameters.\n";
-	cout << "-fVALUE      fragment mass tolerance\n";
-	cout << "             VALUE: low, medium or high\n";
-	cout << "             default: low\n";
-	cout << "-mVALUE      maximum number of spectra to use\n";
-	cout << "             VALUE:  positive integer or -1 if use all\n";
-	cout << "             default: -1\n";
-	cout << "-pVALUE      parent mass tolerance (ppm)\n";
-	cout << "             VALUE: positive integer\n";
-	cout << "             default: 20\n";
+	cout << "-fVALUE          fragment mass tolerance\n";
+	cout << "                 VALUE: low, medium or high\n";
+	cout << "                 default: low\n";
+	cout << "-mVALUE          maximum number of spectra to use\n";
+	cout << "                 VALUE:  positive integer or -1 if use all\n";
+	cout << "                 default: -1\n";
+	cout << "-pVALUE          parent mass tolerance (ppm)\n";
+	cout << "                 VALUE: positive integer\n";
+	cout << "                 default: 20\n";
 	cout << "\n3. Other parameters.\n";
-	cout << "--version    displays current version of idX\n";
-	cout << "--help       displays this page\n";
+	cout << "--version, -v    displays current version of idX\n";
+	cout << "--help, -h       displays this page\n";
 	return;
 }
 
@@ -148,11 +148,11 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 	params["output file"] = "";
 	char flag[16] = "";
 	if(argc > 1)	{
-		if(strcmp(argv[1],"--version") == 0)	{
+		if(strcmp(argv[1],"--version") == 0 || strcmp(argv[1],"-v") == 0)	{
 			cout << params["version"] << "\n";
 			exit(0);
 		} 
-		if(strcmp(argv[1],"--help") == 0)	{
+		if(strcmp(argv[1],"--help") == 0 || strcmp(argv[1],"-h") == 0)	{
 			print_help();
 			exit(0);
 		} 
@@ -164,7 +164,6 @@ int load_params(map<string,string>& params,int argc,char* argv[])	{
 		flag[1] = argv[i][1];
 		flag[2] = '\0';
 		pvalue = argv[i]+2;
-		cout << flag << ":" << pvalue << "\n";
 		if(strcmp(flag,"-f") == 0)	{
 			int32_t fragment_tolerance = 300; // default fragment mass tolerance
 			try	{
