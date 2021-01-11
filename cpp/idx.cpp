@@ -111,14 +111,14 @@ inline bool exists (const std::string& name) {
 
 void print_help(void)	{
 	cout << "\nusage:\t>idX -sFILE -kFILE -oFILE -f(low) -m(-1) -p(20)" << "\n";
-	cout << "\n1. Required parameters.\n\n";
+	cout << "\n1. Required parameters.\n";
 	cout << "-sFILE       spectrum peak list file path\n";
 	cout << "             FILE:  MGF or CMN format peak list\n";
 	cout << "-kFILE       kernel file path\n";
 	cout << "             FILE:  JSON lines format kernel list\n";
 	cout << "-oFILE       output file path\n";
 	cout << "             FILE:  TSV format result file\n";
-	cout << "\n2. Optional parameters.\n\n";
+	cout << "\n2. Optional parameters.\n";
 	cout << "-fVALUE      fragment mass tolerance\n";
 	cout << "             VALUE: low, medium or high\n";
 	cout << "             default: low\n";
@@ -128,6 +128,9 @@ void print_help(void)	{
 	cout << "-pVALUE      parent mass tolerance (ppm)\n";
 	cout << "             VALUE: positive integer\n";
 	cout << "             default: 20\n";
+	cout << "\n3. Other parameters.\n";
+	cout << "--version    displays current version of idX\n";
+	cout << "--help       displays this page\n";
 	return;
 }
 
