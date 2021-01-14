@@ -752,12 +752,12 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 		dtot += (double)ppm_map[i];
 	}
 	double evalue = 0.0;
-	if(dtot > 0.0 and low_t > -15)	{
+	if(dtot > 0.0 and low_t > 5-parent_tolerance)	{
 		evalue = 0.0;
-		for(int32_t i = -1*parent_tolerance; i <= -15; i++)	{
+		for(int32_t i = -1*parent_tolerance; i <= 5-parent_tolerance; i++)	{
 			evalue += (double)ppm_map[i];
 		}
-		evalue /= 6.0;
+		evalue /= 6;
 		double ble = 100.0*(evalue*(high_t - low_t)/dtot);
 		sprintf(str,"%.1f",ble);
 		info["baseline error (%)"] = str;
@@ -773,9 +773,9 @@ bool create_output::dump_lines(string& _ofile,double _tp)	{
 			info["fpr"] = "";
 		}
 	}
-	else if(dtot > 0.0 and high_t < 15)	{
+	else if(dtot > 0.0 and high_t < parent_tolerance-5)	{
 		evalue = 0.0;
-		for(int32_t i = 15; i <= parent_tolerance; i++)	{
+		for(int32_t i = parent_tolerance-5; i <= parent_tolerance; i++)	{
 			evalue += (double)ppm_map[i];
 		}
 		evalue /= 6.0;
