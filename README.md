@@ -42,7 +42,7 @@ where the "value" is the SHA256 hash of all of the preceeding lines, with leadin
 
 The software runs using the `main()` method in `idx.cpp` to control the workflow of PSM identification. This method is also responsible for most of the logging text output that is directed to stdout. The order of operations in this method are as follows:
 
-1. Command line parameters are checked and stored. Use the "--help" command line option to list the current list of parameters.
+1. Command line parameters are checked and stored. Use the "--help" command line option to get the current list of parameters.
 
 2. A `load_kernel` object is created and passed to a `load_spectra` object, that creates a list of spectra in the `load_spectra` object and an index of those spectra in the `load_kernel` object.
 
