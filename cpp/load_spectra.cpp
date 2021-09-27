@@ -187,16 +187,13 @@ bool load_spectra::load_mgf(map<string,string>& _params,load_kernel& _lk)	{
 
 bool load_spectra::load_cmn(map<string,string>& _params,load_kernel& _lk)	{
 	// open the spectrum file
-	FILE *pFile;
-	pFile = fopen(_params["spectrum file"].c_str(),"rb");
-	if(pFile == NULL)	{
+	std::fstream inFile(_params["spectrum file"].c_str(),std::ios_base::binary|std::ios_base::in);
+	if(inFile.fail())	{
 		return false;
 	}
-	size_t ret = 0;
 	char *pLine = new char[1024];
-	ret = fread((void *)pLine,1,256,pFile);
-	if(ret != 256)	{
-		fclose(pFile);
+	inFile.read((char*)pLine,256);
+	if(inFile.fail())	{
 		cout << "File not in CMN format (1)\n";
 		cout.flush();
 		return false;
@@ -205,7 +202,7 @@ bool load_spectra::load_cmn(map<string,string>& _params,load_kernel& _lk)	{
 	pLine[tLength] = '\0';
 	size_t version = 1;
 	if(strstr(pLine,"CMN ") != pLine)	{
-		fclose(pFile);
+		inFile.close();
 		cout << "File not in CMN format (2)\n";
 		cout.flush();
 		delete pLine;
@@ -233,76 +230,73 @@ bool load_spectra::load_cmn(map<string,string>& _params,load_kernel& _lk)	{
 	vector<double> intensities; // vector of fragment intensities
 	spectrum sp; // spectrum object
 	const double proton = 1.007276; //constant used to recalculate neutral masses
-	int32_t scan = 0; //scan number of the spectrum
-	int32_t s = 1; // spectrum count
+	uint32_t scan = 0; //scan number of the spectrum
+	uint32_t s = 1; // spectrum count
 	double rt = 0.0; // run time (seconds)
 	unsigned short sValue = 0;
 	unsigned char cValue = 0;
-	unsigned int iValue = 0;
+	uint32_t iValue = 0;
 	float fValue = 0.0;
 	double dValue = 0.0;
 	float pi = 100.0;
 	// process the file, one line at a time
-	while(!feof(pFile))	{
-		ret = fread((void *)&iValue,sizeof(unsigned int),1,pFile);
+	while(inFile.good())	{
+		iValue = 0;
+		inFile.read((char *)&iValue,4);
 		scan = iValue;
-		ret = fread((void *)&dValue,sizeof(double),1,pFile);
+		inFile.read((char *)&dValue,sizeof(double));
 		parent = dValue - proton;
-		ret = fread((void *)&cValue,1,1,pFile);
+		inFile.read((char *)&cValue,1);
 		charge = (double)cValue;
 		if(version == 2)	{
-			unsigned int iValue = 0;
-			ret = fread((void *)&iValue,4,1,pFile);
+			uint32_t tValue = 0;
+			inFile.read((char *)&tValue,4);
 			if(iValue > tLength)	{
-				tLength = iValue + 255;
+				tLength = tValue + 255;
 				delete pLine;
 				pLine = new char[tLength];
 			}
-			ret = fread((void *)pLine,1,iValue,pFile);
-			pLine[iValue] = '\0';
+			inFile.read((char *)pLine,tValue);
+			pLine[tValue] = '\0';
 		}
 		else	{	
-			ret = fread((void *)&cValue,1,1,pFile);
-			ret = fread((void *)pLine,1,(int)cValue,pFile);
+			inFile.read((char *)&cValue,1);
+			inFile.read((char *)pLine,(int)cValue);
+
 			pLine[cValue] = '\0';
 		}
 		desc = pLine;
 		sp.clear();
 		sp.pm = (int32_t)(0.5 + 1000*parent); // convert to mDa
 		sp.pz = (int32_t)charge; // record charge
-		sp.pi = pi; // parent intensity
+		sp.pi = (int32_t)pi; // parent intensity
 		sp.pt = pt; // record parent tolerance
 		sp.desc = desc; // record spectrum description
 		sp.rt = rt; // record retention time
 		//substitute ordinal value for scan number, if no scan available
-		if(scan == 0)	{
-			sp.sc = s;
-			equals = desc.find("scan=");
-			if(equals != desc.npos)	{
-				equals += 5;
-				sp.sc = atol(desc.substr(equals,size-equals).c_str());
-			}
+		sp.sc = scan;
+		equals = desc.find("scan=");
+		if(equals != desc.npos)	{
+			equals += 5;
+			sp.sc = atol(desc.substr(equals,size-equals).c_str());
 		}
-		else	{
-			sp.sc = scan;
-		}
+		cout << sp.sc << "\n";
 		fValue = 0.0;
-		ret = fread((void *)&fValue,sizeof(float),1,pFile);
-//		float fIntensity = fValue;
+		inFile.read((char *)&fValue,sizeof(float));
 		cValue = 0;
-		ret = fread((void *)&cValue,1,1,pFile);
+		inFile.read((char *)&cValue,1);
 		size_t tSize = (size_t)cValue;
 		fValue = 0.0;
-		ret = fread((void *)&fValue,sizeof(float),1,pFile);
-		ret = fread((void *)&cValue,1,1,pFile);
+		inFile.read((char *)&fValue,sizeof(float));
+		inFile.read((char *)&cValue,1);
 		float fScale = fValue;
 		size_t a = 0;
-		ret = fread((void *)&sValue,2,1,pFile);
+		inFile.read((char *)&sValue,2);
 		iValue = (unsigned int)sValue;
 		masses.push_back((float)iValue/fScale);
 		a++;
 		while(a < tSize)	{
-			ret = fread((void *)&sValue,2,1,pFile);
+			inFile.read((char *)&sValue,2);
 			iValue += (unsigned int)sValue;
 			masses.push_back((float)iValue/fScale);
 			a++;
@@ -311,7 +305,7 @@ bool load_spectra::load_cmn(map<string,string>& _params,load_kernel& _lk)	{
 		double dSum = 0.0;
 		char cMax = 0;
 		while(a < tSize)	{
-			ret = fread((void *)&cValue,1,1,pFile);
+			inFile.read((char *)&cValue,1);
 			intensities.push_back((float)cValue);
 			if(cMax < cValue)	{
 				cMax = cValue;
@@ -363,7 +357,7 @@ bool load_spectra::load_cmn(map<string,string>& _params,load_kernel& _lk)	{
 	cout << "\n";
 	cout.flush();
 	delete line;
-	fclose(pFile);
+	inFile.close();
 	//calculate a SHA256 hash value for the spectrum file
 	//for validation use
 	std::ifstream ifile(_params["spectrum file"], std::ios::binary);
