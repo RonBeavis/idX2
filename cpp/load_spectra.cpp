@@ -218,11 +218,11 @@ bool load_spectra::load_cmn(map<string,string>& _params,load_kernel& _lk)	{
 	int32_t res = (int32_t)atoi(_params["fragment tolerance"].c_str());
 	double pt = atoi(_params["parent tolerance"].c_str());
 	size_t len = 1024*4; // maximum line length
-	size_t size = 0;  // size of current line
+//	size_t size = 0;  // size of current line
 	char *line = new char[len]; //char buffer used to read file
 	string temp = ""; // temporary string object
 	string desc = ""; //description information (if available)
-	size_t equals = 0;
+//	size_t equals = 0;
 	double parent = 0.0; //parent mass
 	double charge = 1.0; //parent charge
 	string run_time = ""; //chromatographic retention time information (if available)
@@ -275,12 +275,12 @@ bool load_spectra::load_cmn(map<string,string>& _params,load_kernel& _lk)	{
 		sp.rt = rt; // record retention time
 		//substitute ordinal value for scan number, if no scan available
 		sp.sc = scan;
-		equals = desc.find("scan=");
-		if(equals != desc.npos)	{
-			equals += 5;
-			sp.sc = atol(desc.substr(equals,size-equals).c_str());
-		}
-		cout << sp.sc << "\n";
+//		equals = desc.find("scan=");
+//		if(equals != desc.npos)	{
+//			equals += 5;
+//			sp.sc = atol(desc.substr(equals,size-equals).c_str());
+//		}
+//		cout << sp.sc << "\n";
 		fValue = 0.0;
 		inFile.read((char *)&fValue,sizeof(float));
 		cValue = 0;
@@ -313,6 +313,7 @@ bool load_spectra::load_cmn(map<string,string>& _params,load_kernel& _lk)	{
 			dSum += (double)cValue;
 			a++;
 		}
+//		if(parent > 600.0 && sp.sc < 100000000)	{
 		if(parent > 600.0)	{
 			size_t i = 0;
 			pair<int32_t,int32_t> p;

@@ -45,6 +45,7 @@ bool create_results::create(map<string, string>& _p, // parameter strings
 	size_t a = 0;
 	size_t b = 0;
 	int32_t mi = 0;
+	map<int32_t,int32_t> scans;
 	// loop through spectra
 	for (size_t s = 0; s < _l.spectra.size(); s++) {
 		// output keep-alive text for logging
@@ -186,8 +187,42 @@ bool create_results::create(map<string, string>& _p, // parameter strings
 			r.rt = _l.spectra[s].rt; // record the spectrum retention time
 			r.ions = _l.spectra[s].pks; // record the number of peaks to be used in the physical model
 			ids.push_back(r); // save the id record for use in create_output
+			scans.insert(std::pair<int32_t,int32_t>(r.sc,(int32_t)(ids.size() - 1)));
 		}
 		z += 1; // increment PSM serial number
+	}
+	// deal with scan numbers > 100000000
+	// these scan numbers are present in common files where the parent
+	// ion charge could not be determined by the raw file reader
+	// in those cases the scan number assigned to z=2 & scan number + 100000000 to z=3
+	auto itl = scans.end();
+	auto its = scans.begin();
+	const int32_t smax = 100000000;
+	for(size_t s = 0; s < ids.size(); s++) {
+		if(ids[s].sc >= smax)	{
+			its = scans.find(ids[s].sc-smax);
+			if(its != itl)	{
+				if(ids[s].peaks > ids[its->second].peaks)	{
+					ids[its->second].sc = -1;
+					ids[s].sc -= smax;
+				}
+				else	{
+					ids[s].sc = -1;
+				}
+			}
+			else	{
+				ids[s].sc -= smax;
+			}
+		}
+	}
+	auto itId = ids.begin();
+	while(itId != ids.end()) {
+		if(itId->sc == -1)	{
+			itId = ids.erase(itId);
+		}
+		else	{
+			itId++;
+		}
 	}
 	// guarantee that the log text output is terminated with a new line and flushed
 	cout << '\n';
