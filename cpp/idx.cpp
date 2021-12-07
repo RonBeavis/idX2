@@ -138,7 +138,7 @@ void print_help(void)	{
 // parameters, stored in a map<string,string> object
 
 int load_params(map<string,string>& params,int argc,char* argv[])	{
-	params["version"] = "idX, 2021.9.28 (std)";
+	params["version"] = "idX, 2021.12.07 (std)";
 	params["fragmentation"] = "";
 	params["parent tolerance"] = "20";
 	params["fragment tolerance"] = "300";

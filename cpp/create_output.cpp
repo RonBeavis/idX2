@@ -507,10 +507,8 @@ bool create_output::create_binary(map<string,string>& _params,
 	if(!load_mods())	{ //warns if "reports_mods.txt" is not present
 		cout << "Warning (idx:1001): annotation file \"report_mods.txt\" was not present" << '\n';
 	}
-	bool is_tmt = false;
-	if(_params.find("kernel file")->second.find("_tmt") != _params.find("kernel file")->second.npos)	{
-		is_tmt = true;
-	}
+//	if(_params.find("kernel file")->second.find("_tmt") != _params.find("kernel file")->second.npos)	{
+//	}
 	int32_t k = 0;
 	//loops through ids and creates some structures to facilitate generating report lines
 	for(size_t j = 0; j < _cr.ids.size(); j++)	{
@@ -543,11 +541,9 @@ bool create_output::create_binary(map<string,string>& _params,
 	//updated min_c value based on instrument resolution
 	if(res == 50)	{
 		min_c = 7;
-		if(is_tmt) min_c = 8;
 	}
 	else if(res == 20)	{
 		min_c = 6;
-		if(is_tmt) min_c = 7;
 	}
 	int32_t min_l = min_c;
 	string line; //will contain a JSON Lines JSON object
@@ -618,7 +614,13 @@ bool create_output::create_binary(map<string,string>& _params,
 			}
 			seq = js.seq;
 			// apply math model to result to obtain a probability of stochastic assignment
-			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,sv[s].pz,score,prob);
+			// get the total modification mass for the peptide and remove it from the peptide mass
+			// in the apply_model method to get the right density from the model
+			double mod_mass = 0.0;
+			for(size_t a = 0; a < js.mods.size();a++)	{
+				mod_mass += (double)js.mods[a].mass;
+			}
+			apply_model(res,seq,pm-mod_mass,sv[s].peaks,sv[s].ions,sv[s].pz,score,prob);
 			ri_limit = get_ri_limit(seq.size());
 			if(score < score_min or sv[s].ri < ri_limit or sv[s].peaks < min_l)	{
 				continue; //bail out if match does not pass conditions
@@ -885,10 +887,8 @@ bool create_output::create(map<string,string>& _params,
 		cout << "Warning (idx:1001): annotation file \"report_mods.txt\" was not present" << '\n';
 	}
 	int32_t k = 0;
-	bool is_tmt = false;
-	if(_params.find("kernel file")->second.find("_tmt") != _params.find("kernel file")->second.npos)	{
-		is_tmt = true;
-	}
+//	if(_params.find("kernel file")->second.find("_tmt") != _params.find("kernel file")->second.npos)	{
+//	}
 	//loops through ids and creates some structures to facilitate generating report lines
 	for(size_t j = 0; j < _cr.ids.size(); j++)	{
 		sv[_cr.ids[j].sn] = _cr.ids[j];
@@ -921,11 +921,9 @@ bool create_output::create(map<string,string>& _params,
 	//updated min_c value based on instrument resolution
 	if(res == 50)	{
 		min_c = 7;
-		if(is_tmt) min_c = 8;
 	}
 	else if(res == 20)	{
 		min_c = 6;
-		if(is_tmt) min_c = 7;
 	}
 	int32_t min_l = min_c;
 	string line; //will contain a JSON Lines JSON object
@@ -1002,8 +1000,18 @@ bool create_output::create(map<string,string>& _params,
 				continue;
 			}
 			seq = js["seq"].GetString();
+			// get the total modification mass for the peptide and remove it from the peptide mass
+			// in the apply_model method to get the right density from the model
+			double mod_mass = 0.0;
+			if(js.HasMember("mods"))	{
+				const Value& jmods = js["mods"];
+				for(SizeType a = 0; a < jmods.Size();a++)	{
+					const Value& lmods = jmods[a];
+					mod_mass += (double)(lmods[2].GetInt());
+				}
+			}	
 			// apply math model to result to obtain a probability of stochastic assignment
-			apply_model(res,seq,pm,sv[s].peaks,sv[s].ions,sv[s].pz,score,prob);
+			apply_model(res,seq,pm-mod_mass,sv[s].peaks,sv[s].ions,sv[s].pz,score,prob);
 			limit = get_ri_limit(seq.size());
 			if(score < score_min or sv[s].ri < limit or sv[s].peaks < min_l)	{
 				continue; //bail out if match does not pass conditions
